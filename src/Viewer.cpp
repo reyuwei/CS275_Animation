@@ -181,6 +181,11 @@ void Viewer::drawContents() {
     FPS->setValue("FPS: " + fps_str);
 }
 
+void Viewer::drawHair()
+{
+
+}
+
 bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {
     if (!Screen::scrollEvent(p, rel)) {
         m_camera.zoom = max(0.1, m_camera.zoom * (rel.y() > 0 ? 1.1 : 0.9));
@@ -284,6 +289,7 @@ void Viewer::refresh_mesh() {
     m_phong_shader.uploadAttrib("position", *(m_mesh->get_points()));
     //m_phong_shader.uploadAttrib("normal", *(m_mesh->get_normals()));
     m_phong_shader.uploadAttrib("vertexUV", *(m_mesh->get_uvs()));
+
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,

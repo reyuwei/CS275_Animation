@@ -32,6 +32,8 @@ Mesh::Mesh(const std::string &filename) : m_num_vertices(0), m_num_faces(0)
     m_dist_max = 0.0f;
 
     load_mesh(filename);
+    std::string directory = filename.substr(0, filename.find_last_of('\\'));
+    load_label(directory + "\\ishair_fix.txt");
 }
 
 Mesh::~Mesh() {
@@ -177,6 +179,89 @@ bool Mesh::load_mesh(const std::string &filename) {
     return true;
 }
 
+bool Mesh::load_label(const std::string &filename)
+{
+    std::ifstream infile;
+    infile.open(filename);
+    if (!infile.is_open())
+        return false;
+
+    ishair.clear();
+    for (int i = 0; i < m_num_faces * 3; i++)
+        ishair.push_back(999);
+
+    std::string s;
+    int counter = 0;
+    while (getline(infile, s))
+    {
+        float number = -1;
+        std::stringstream stream(s);
+        stream >> number;
+        ishair[counter] = number;
+        counter++;
+    }
+    infile.close();
+    return true;
+#ifdef FIX_LABEL
+    std::vector<std::vector<float>> ishair_entry;
+
+    std::string s;
+    int counter = 0;
+    while (getline(infile, s))
+    {
+        std::vector<float> vertex_entry;
+        do
+        {
+            std::string number_s = s.substr(0, s.find_first_of(" "));
+            float number = -1;
+            std::stringstream stream(number_s);
+            stream >> number;
+            vertex_entry.push_back(number);
+            s.erase(0, s.find_first_of(" ") + 1);
+        } while (vertex_entry.size() < 4);
+
+        ishair_entry.push_back(vertex_entry);
+
+        counter++;
+        if (counter % 1000 == 0)
+            std::cout << counter << std::endl;
+    }
+    infile.close();
+
+    for (int i = 0; i < m_num_faces * 3; i++)
+    {
+        float mindis = 1e10;
+        int target_label = -1;
+        for (int j = 0; j < ishair_entry.size(); j++)
+        {
+            float point_dis = pow(m_points(0, i) - ishair_entry[j][0], 2) +
+                pow(m_points(1, i) - ishair_entry[j][1], 2) +
+                pow(m_points(2, i) - ishair_entry[j][2], 2);
+            if (point_dis < mindis)
+            {
+                mindis = point_dis;
+                target_label = j;
+            }
+        }
+        //std::cout << mindis << std::endl;
+        ishair[i] = ishair_entry[target_label][3];
+    }
+
+
+    std::ofstream outfile;
+    outfile.open(filename + "x");
+    if (!outfile.is_open())
+        return false;
+
+    for (int i = 0; i < ishair.size(); i++)
+        outfile << ishair[i] << std::endl;
+    outfile.close();
+    return true;
+
+#endif
+
+}
+
 unsigned int Mesh::get_number_of_face() {
     return m_num_faces;
 }
@@ -200,6 +285,21 @@ const Eigen::MatrixXf *Mesh::get_normals() {
 const Eigen::MatrixXf *Mesh::get_uvs()
 {
     return &m_uvs;
+}
+
+const Eigen::MatrixXf *Mesh::get_hairpos()
+{
+    Eigen::MatrixXf m_hair = Eigen::MatrixXf(3, 10000);
+    int counter = 0;
+    for (int i = 0; i < ishair.size(); i++)
+    {
+        if (ishair[i] == 1)
+        {
+            m_hair.col(counter++) << m_points(0);
+        }
+    }
+
+    return &m_hair;
 }
 
 float Mesh::get_dist_max()

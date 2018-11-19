@@ -43,7 +43,8 @@ public:
 
     virtual void draw(NVGcontext *ctx);
     virtual void drawContents();
-
+    
+    void drawHair();
     void refresh_mesh();
     void refresh_trackball_center();
 
