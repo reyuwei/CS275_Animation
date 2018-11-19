@@ -63,14 +63,14 @@ public:
         return nanogui::Quaternionf(rotation_w, rotation_x, rotation_y, rotation_z);
     }
 
-    void SetTranslation(Eigen::Vector3f trans)
+    void SetTranslation(const Eigen::Vector3f trans)
     {
         trans_x = trans.x();
         trans_y = trans.y();
         trans_z = trans.z();
     }
 
-    void SetRotation(nanogui::Quaternionf rot)
+    void SetRotation(const nanogui::Quaternionf &rot)
     {
         rotation_x = rot.x();
         rotation_y = rot.y();
@@ -88,7 +88,7 @@ public:
         scale = s;
     }
 
-    static nanogui::Quaternionf InterpolateQ(nanogui::Quaternionf s, nanogui::Quaternionf e, float t)
+    static nanogui::Quaternionf InterpolateQ(const nanogui::Quaternionf &s,const nanogui::Quaternionf &e, float t)
     {
         nanogui::Quaternionf inter_q;
         inter_q.setIdentity();

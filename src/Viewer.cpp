@@ -96,7 +96,7 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
 
     //m_mesh = new Mesh("teapot.obj");
 
-    m_mesh = new Mesh("D:\\OneDrive\\Documents\\2019Fall\\Animation\\CS275_2019Fall_Animation\\model\\Pasha_guard_head.obj");
+    m_mesh = new Mesh("..\\..\\model\\Pasha_guard_head.obj");
 
 
     this->refresh_mesh();
