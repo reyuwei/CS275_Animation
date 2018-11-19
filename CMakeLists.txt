@@ -47,6 +47,10 @@ add_executable(tinyobjviewer
     src/main.cpp
     src/Viewer.cpp
     src/Mesh.cpp
+    src/GLTexture.h
+    src/KeyFrameAnimator.h
+    src/Viewer.h
+    src/Mesh.h
     )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})

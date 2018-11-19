@@ -184,5 +184,5 @@ Temporary Items
 _build/
 cmake-build-debug/
 
-
+build/*
 

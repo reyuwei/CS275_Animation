@@ -8,7 +8,7 @@
 #include <string>
 #include <Eigen/Sparse>
 #include <vector>
-
+#include "GLTexture.h"
 #include "tiny_obj_loader.h"
 
 typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
@@ -23,7 +23,7 @@ class Mesh {
   
   bool load_mesh(const std::string &filename);
   
-  void export_mesh(const std::string &filename);
+  //void export_mesh(const std::string &filename);
   
   unsigned int get_number_of_face();
   
@@ -34,16 +34,23 @@ class Mesh {
   const MatrixXu *get_indices();
   
   const Eigen::MatrixXf *get_normals();
+
+  const Eigen::MatrixXf *get_uvs();
   
   float get_dist_max();
-  
+
+  GLTexture* get_texture();
+
   private:
   
   std::vector<tinyobj::shape_t> m_shapes;
   std::vector<tinyobj::material_t> m_materials;
   
+  GLTexture m_texture;
+
   size_t m_num_vertices;
   size_t m_num_faces;
+  size_t m_num_uvs;
   
   Eigen::Vector3f m_bmin;
   Eigen::Vector3f m_bmax;
@@ -52,6 +59,7 @@ class Mesh {
   Eigen::MatrixXf m_points;
   MatrixXu m_indices;
   Eigen::MatrixXf m_normals;
+  Eigen::MatrixXf m_uvs;
 };
 
 
