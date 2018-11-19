@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by stephan-lb on 22/03/2017.
 //
 
@@ -66,6 +66,7 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
     Widget *slider_panel = new Widget(m_window);
     slider_panel->setLayout(new BoxLayout(Orientation::Vertical, Alignment::Middle, 0, 5));
 
+
     /* Add a text box and set defaults */
     text_frameid = new nanogui::TextBox(slider_panel);
     text_frameid->setFixedSize(Vector2i(300, 25));
@@ -78,6 +79,17 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
         currframe = value * frame_num;
         text_frameid->setValue("Current Frame: " + std::to_string(currframe));
     });
+
+    m_window_fps = new Window(this, "FPS");
+    m_window_fps->setPosition(Vector2i(600, 15));
+    m_window_fps->setLayout(new GroupLayout());
+    Widget *fps_panel = new Widget(m_window_fps);
+    fps_panel->setLayout(new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
+
+    FPS = new nanogui::TextBox(fps_panel);
+    FPS->setFixedSize(Vector2i(300, 25));
+    FPS->setValue("FPS: " + std::to_string(1.0f / elapsed));
+
 
     performLayout();
     initShaders();
@@ -114,6 +126,8 @@ Vector2f Viewer::getScreenCoord() {
 }
 
 void Viewer::drawContents() {
+    float lasttime = glfwGetTime();
+
     using namespace nanogui;
 
     if (m_mesh == nullptr)
@@ -137,7 +151,6 @@ void Viewer::drawContents() {
         slider->setValue(currframe * 1.0f / frame_num);
         text_frameid->setValue("Current Frame: " + std::to_string(currframe));
         model = m_animator->GetView(currframe);
-
     }
 
     if (m_animator->GetKeyFrameIndex(currframe) != -1)
@@ -159,6 +172,13 @@ void Viewer::drawContents() {
     glDisable(GL_CULL_FACE);
 
     m_phong_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
+
+    float fTime = glfwGetTime();
+    elapsed = fTime - lasttime;
+    char fps[20];
+    sprintf(fps, "%7.2f", 1.0f / elapsed);
+    std::string fps_str = fps;
+    FPS->setValue("FPS: " + fps_str);
 }
 
 bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {

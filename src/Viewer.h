@@ -80,6 +80,7 @@ private:
     // Variables for the viewer
     nanogui::GLShader m_phong_shader;
     nanogui::Window *m_window;
+    nanogui::Window *m_window_fps;
 
     Mesh* m_mesh;
 
@@ -87,12 +88,15 @@ private:
 
     int currframe = 0;
     TextBox *text_frameid;
+    TextBox *FPS;
     Slider *slider;
     TextBox *text_iskeyframe;
 
     KeyFrameAnimator *m_animator = NULL;
 
     int frame_num = 60;
+
+    float elapsed = 1;
 };
 
 
