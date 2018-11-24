@@ -10,6 +10,7 @@
 #include <vector>
 #include "GLTexture.h"
 #include "tiny_obj_loader.h"
+#include "MassSpring.h"
 
 typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
 
@@ -40,10 +41,14 @@ public:
     const Eigen::MatrixXf *get_uvs();
 
     const Eigen::MatrixXf *get_hairpos();
+    const MatrixXu *get_hairindices();
+    int get_number_of_hair();
 
     float get_dist_max();
 
     GLTexture* get_texture();
+
+    void generateHair();
 
 private:
 
@@ -56,6 +61,7 @@ private:
     size_t m_num_faces;
     size_t m_num_uvs;
 
+
     Eigen::Vector3f m_bmin;
     Eigen::Vector3f m_bmax;
     Eigen::Vector3f m_mesh_center;
@@ -65,7 +71,14 @@ private:
     Eigen::MatrixXf m_normals;
     Eigen::MatrixXf m_uvs;
 
+    MatrixXu m_hairindices;
+    Eigen::MatrixXf m_hair;
     std::vector<float> ishair;
+
+    Hair hairs;
+    int hair_num;
+
+
 };
 
 

@@ -79,7 +79,8 @@ private:
     Vector2i m_translateStart = Vector2i(0, 0);
 
     // Variables for the viewer
-    nanogui::GLShader m_phong_shader;
+    nanogui::GLShader m_head_shader;
+    nanogui::GLShader m_hair_shader;
     nanogui::Window *m_window;
     nanogui::Window *m_window_fps;
 

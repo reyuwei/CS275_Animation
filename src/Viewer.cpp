@@ -134,7 +134,7 @@ void Viewer::drawContents() {
         return;
 
     /* Draw the window contents using OpenGL */
-    m_phong_shader.bind();
+    m_head_shader.bind();
 
     Eigen::Matrix4f model, view, proj;
     computeCameraMatrices(model, view, proj);
@@ -161,17 +161,23 @@ void Viewer::drawContents() {
     Matrix4f mv = view * model;
     Matrix4f p = proj;
     /* MVP uniforms */
-    m_phong_shader.setUniform("MV", mv);
-    m_phong_shader.setUniform("P", p);
+    m_head_shader.setUniform("MV", mv);
+    m_head_shader.setUniform("P", p);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_mesh->get_texture()->texture());
-    m_phong_shader.setUniform("tex", 0);
+    m_head_shader.setUniform("tex", 0);
 
     // Setup OpenGL (making sure the GUI doesn't disable these
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    m_phong_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
+    m_head_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
+
+    //glLineWidth(2.0f);
+    m_hair_shader.bind();
+    m_hair_shader.setUniform("MV", mv);
+    m_hair_shader.setUniform("P", p);
+    m_hair_shader.drawIndexed(GL_LINES, 0, m_mesh->get_number_of_hair());
 
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
@@ -242,7 +248,7 @@ bool Viewer::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
 
 void Viewer::initShaders() {
     // Shaders
-    m_phong_shader.init(
+    m_head_shader.init(
         "a_simple_shader",
 
         /* Vertex shader */
@@ -272,6 +278,31 @@ void Viewer::initShaders() {
         "color = texture( tex, UV ).rgba;\n"
         "}"
     );
+
+    m_hair_shader.init(
+        /* An identifying name */
+        "a_simple_shader_hair",
+
+        /* Vertex shader */
+        "#version 330\n"
+        "uniform mat4 MV;\n"
+        "uniform mat4 P;\n"
+
+        "in vec3 position;\n"
+
+        "void main() {\n"
+        "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
+        "    gl_Position = P * vpoint_mv;\n"
+        "}",
+
+        /* Fragment shader */
+        "#version 330\n"
+        "out vec4 color;\n"
+        "uniform float intensity;\n"
+        "void main() {\n"
+        "    color = vec4(1.0,0.0,0.0, 1.0);\n"
+        "}"
+    );
 }
 
 void Viewer::refresh_trackball_center() {
@@ -284,12 +315,15 @@ void Viewer::refresh_trackball_center() {
 }
 
 void Viewer::refresh_mesh() {
-    m_phong_shader.bind();
-    m_phong_shader.uploadIndices(*(m_mesh->get_indices()));
-    m_phong_shader.uploadAttrib("position", *(m_mesh->get_points()));
-    //m_phong_shader.uploadAttrib("normal", *(m_mesh->get_normals()));
-    m_phong_shader.uploadAttrib("vertexUV", *(m_mesh->get_uvs()));
+    m_head_shader.bind();
+    m_head_shader.uploadIndices(*(m_mesh->get_indices()));
+    m_head_shader.uploadAttrib("position", *(m_mesh->get_points()));
+    m_head_shader.uploadAttrib("vertexUV", *(m_mesh->get_uvs()));
 
+    m_hair_shader.bind();
+    m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
+    m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
+    m_hair_shader.setUniform("intensity", 0.5f);
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
@@ -319,7 +353,8 @@ TransFactor Viewer::computeModelTransformation()
 }
 
 Viewer::~Viewer() {
-    m_phong_shader.free();
+    m_head_shader.free();
+    m_hair_shader.free();
     delete m_mesh;
     delete m_animator;
 }

@@ -34,6 +34,7 @@ Mesh::Mesh(const std::string &filename) : m_num_vertices(0), m_num_faces(0)
     load_mesh(filename);
     std::string directory = filename.substr(0, filename.find_last_of('\\'));
     load_label(directory + "\\ishair_fix.txt");
+    generateHair();
 }
 
 Mesh::~Mesh() {
@@ -71,7 +72,7 @@ bool Mesh::load_mesh(const std::string &filename) {
     std::cout << "[LoadOBJ] # of uvs: " << m_num_uvs << std::endl;
 
     m_points = Eigen::MatrixXf(3, m_num_faces * 3);
-    m_indices = MatrixXu(3, m_num_faces * 3);
+    m_indices = MatrixXu(3, m_num_faces);
     m_normals = Eigen::MatrixXf(3, m_num_faces * 3);
     m_uvs = Eigen::MatrixXf(2, m_num_faces * 3);
 
@@ -192,13 +193,16 @@ bool Mesh::load_label(const std::string &filename)
 
     std::string s;
     int counter = 0;
+    hair_num = 0;
     while (getline(infile, s))
     {
-        float number = -1;
+        float label = -1;
         std::stringstream stream(s);
-        stream >> number;
-        ishair[counter] = number;
+        stream >> label;
+        ishair[counter] = label;
         counter++;
+        if (label == 1)
+            hair_num++;
     }
     infile.close();
     return true;
@@ -289,18 +293,31 @@ const Eigen::MatrixXf *Mesh::get_uvs()
 
 const Eigen::MatrixXf *Mesh::get_hairpos()
 {
-    Eigen::MatrixXf m_hair = Eigen::MatrixXf(3, 10000);
+    m_hair = Eigen::MatrixXf(3, hair_num * 2);
     int counter = 0;
     for (int i = 0; i < ishair.size(); i++)
     {
         if (ishair[i] == 1)
         {
-            m_hair.col(counter++) << m_points(0);
+            m_hair.col(2 * counter + 0) << m_points.col(i).x(), m_points.col(i).y(), m_points.col(i).z();
+            auto offset = m_points.col(i) + m_normals.col(i) * 50.0;
+            m_hair.col(2 * counter + 1) << offset.x(), offset.y(), offset.z();
+            counter++;
         }
     }
-
     return &m_hair;
 }
+
+const MatrixXu *Mesh::get_hairindices()
+{
+    m_hairindices = MatrixXu(2, hair_num);
+    for (int i = 0; i < hair_num; i++)
+    {
+        m_hairindices.col(i) << 2 * i + 0, 2 * i + 1;
+    }
+    return &m_hairindices;
+}
+
 
 float Mesh::get_dist_max()
 {
@@ -310,4 +327,21 @@ float Mesh::get_dist_max()
 GLTexture* Mesh::get_texture()
 {
     return &m_texture;
+}
+
+void Mesh::generateHair()
+{
+    Eigen::MatrixXf hairpoints = Eigen::MatrixXf(3, hair_num);
+    int counter = 0;
+    for (int i = 0; i < ishair.size(); i++)
+    {
+        if (ishair[i] == 1)
+            hairpoints.col(counter++) << m_points.col(i).x(), m_points.col(i).y(), m_points.col(i).z();
+    }
+    hairs = Hair(hairpoints, 20, 10, 10);
+}
+
+int Mesh::get_number_of_hair()
+{
+    return hair_num;
 }
