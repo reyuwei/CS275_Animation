@@ -41,6 +41,7 @@ public:
     const Eigen::MatrixXf *get_uvs();
 
     const Eigen::MatrixXf *get_hairpos();
+    const Eigen::MatrixXf *get_haircolors();
     const MatrixXu *get_hairindices();
     int get_number_of_hair();
 
@@ -51,7 +52,6 @@ public:
     void generateHair();
 
 private:
-
     std::vector<tinyobj::shape_t> m_shapes;
     std::vector<tinyobj::material_t> m_materials;
 
@@ -60,7 +60,6 @@ private:
     size_t m_num_vertices;
     size_t m_num_faces;
     size_t m_num_uvs;
-
 
     Eigen::Vector3f m_bmin;
     Eigen::Vector3f m_bmax;
@@ -71,12 +70,16 @@ private:
     Eigen::MatrixXf m_normals;
     Eigen::MatrixXf m_uvs;
 
-    MatrixXu m_hairindices;
-    Eigen::MatrixXf m_hair;
     std::vector<float> ishair;
 
-    Hair hairs;
-    int hair_num;
+    Hair hair_part;
+    int m_num_max_hairs;
+    int m_num_guide_hairs = 1000;
+    int m_num_interpolate_hairs = 10;
+    int m_num_segment_hairs = 1;
+    Eigen::MatrixXf m_hair;
+    Eigen::MatrixXf m_hair_c;
+    MatrixXu m_hairindices;
 
 
 };

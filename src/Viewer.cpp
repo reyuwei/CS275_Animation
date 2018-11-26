@@ -173,11 +173,13 @@ void Viewer::drawContents() {
 
     m_head_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
 
-    //glLineWidth(2.0f);
+    glLineWidth(20.0f);
     m_hair_shader.bind();
     m_hair_shader.setUniform("MV", mv);
     m_hair_shader.setUniform("P", p);
     m_hair_shader.drawIndexed(GL_LINES, 0, m_mesh->get_number_of_hair());
+    this->animate_hair();
+
 
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
@@ -187,10 +189,6 @@ void Viewer::drawContents() {
     FPS->setValue("FPS: " + fps_str);
 }
 
-void Viewer::drawHair()
-{
-
-}
 
 bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {
     if (!Screen::scrollEvent(p, rel)) {
@@ -289,18 +287,22 @@ void Viewer::initShaders() {
         "uniform mat4 P;\n"
 
         "in vec3 position;\n"
+        "in vec3 vec_colors;\n"
+
+        "out vec4 lcolor;\n"
 
         "void main() {\n"
         "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
         "    gl_Position = P * vpoint_mv;\n"
+        "    lcolor = vec4(vec_colors,1.0);\n"
         "}",
 
         /* Fragment shader */
         "#version 330\n"
+        "in vec4 lcolor;\n"
         "out vec4 color;\n"
-        "uniform float intensity;\n"
         "void main() {\n"
-        "    color = vec4(1.0,0.0,0.0, 1.0);\n"
+        "    color = lcolor;\n"
         "}"
     );
 }
@@ -323,7 +325,14 @@ void Viewer::refresh_mesh() {
     m_hair_shader.bind();
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
     m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
-    m_hair_shader.setUniform("intensity", 0.5f);
+    m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolors()));
+    //m_hair_shader.setUniform("intensity", 0.5f);
+}
+
+void Viewer::animate_hair()
+{
+    m_hair_shader.bind();
+    m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
