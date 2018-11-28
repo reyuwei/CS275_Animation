@@ -74,9 +74,9 @@ private:
 
     Hair hair_part;
     int m_num_max_hairs;
-    int m_num_guide_hairs = 1000;
+    int m_num_guide_hairs = 100;
     int m_num_interpolate_hairs = 10;
-    int m_num_segment_hairs = 1;
+    int m_num_segment_hairs = 3;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
     MatrixXu m_hairindices;

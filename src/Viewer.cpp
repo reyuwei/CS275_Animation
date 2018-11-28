@@ -127,7 +127,6 @@ Vector2f Viewer::getScreenCoord() {
 
 void Viewer::drawContents() {
     float lasttime = glfwGetTime();
-
     using namespace nanogui;
 
     if (m_mesh == nullptr)
@@ -145,7 +144,6 @@ void Viewer::drawContents() {
     /* Draw animation */
     if (playing)
     {
-        Sleep(30);
         currframe++;
         currframe = currframe > frame_num ? 0 : currframe;
         slider->setValue(currframe * 1.0f / frame_num);
@@ -170,9 +168,9 @@ void Viewer::drawContents() {
     // Setup OpenGL (making sure the GUI doesn't disable these
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-
     m_head_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
 
+    // show hair
     glLineWidth(20.0f);
     m_hair_shader.bind();
     m_hair_shader.setUniform("MV", mv);
@@ -181,6 +179,7 @@ void Viewer::drawContents() {
     this->animate_hair();
 
 
+    Sleep(30);
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
     char fps[20];
@@ -326,7 +325,6 @@ void Viewer::refresh_mesh() {
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
     m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
     m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolors()));
-    //m_hair_shader.setUniform("intensity", 0.5f);
 }
 
 void Viewer::animate_hair()
