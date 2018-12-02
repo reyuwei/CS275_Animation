@@ -43,8 +43,8 @@ public:
 
     virtual void draw(NVGcontext *ctx);
     virtual void drawContents();
-    
-    
+
+
     void animate_hair();
     void refresh_mesh();
     void refresh_trackball_center();
@@ -100,6 +100,8 @@ private:
     int frame_num = 60;
 
     float elapsed = 1;
+    bool init_hair_trans = true;
+    Eigen::Matrix4f init_model;
 };
 
 

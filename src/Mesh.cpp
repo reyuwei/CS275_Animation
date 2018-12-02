@@ -13,6 +13,14 @@
 #define MIN -1e10
 #define MAX 1e10
 
+bool isNull(Eigen::Vector3f v)
+{
+    if (v.x() == 0 && v.y() == 0 && v.z() == 0)
+        return true;
+    else
+        return false;
+}
+
 bool ExistsFile(const std::string &path) {
     std::fstream _file;
     _file.open(path, std::ios::in);
@@ -35,6 +43,86 @@ Mesh::Mesh(const std::string &filename) : m_num_vertices(0), m_num_faces(0)
     std::string directory = filename.substr(0, filename.find_last_of('\\'));
     load_label(directory + "\\ishair_fix.txt");
     generateHair();
+
+    std::vector<Tri*> tris;
+    for (int i = 0; i < this->m_num_faces; i++)
+    {
+        tris.push_back(this->GetFacei(i));
+    }
+    root = root->Build(tris, 0);
+}
+
+Tri* Mesh::GetFacei(int i)
+{
+    Eigen::Vector3f a = this->m_points.col(this->m_indices.col(i).x());
+    Eigen::Vector3f b = this->m_points.col(this->m_indices.col(i).y());
+    Eigen::Vector3f c = this->m_points.col(this->m_indices.col(i).z());
+
+    Eigen::Vector3f normal = (b - a).cross(c - a);
+    normal.normalize();
+
+    return new Tri(a, b, c, normal);
+}
+
+bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
+{
+    Intersect* out;
+    Ray ray(s, e - s);
+    out = root->Hit(root, ray);
+    if (out != NULL)
+        if (!isNull(out->hitpoint))
+        {
+            float hitsegmentlength = (out->hitpoint - s).norm();
+            if (hitsegmentlength <= SPRING_REST_LENGTH)
+            {
+                delete out;
+                return false;
+            }
+            else
+            {
+                outnormal = e - m_mesh_center;
+                outnormal.normalize();
+                delete out;
+                return true;
+            }
+        }
+    delete out;
+    //outnormal = (e - m_mesh_center).normalized();
+    return false;
+
+    //Ray ray(m_mesh_center, e - m_mesh_center);
+    //out = root->Hit(root, ray);
+    //if (out != NULL)
+    //    if (!isNull(out->hitpoint))
+    //    {
+    //        float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
+    //        float raylength = (e - m_mesh_center).norm();
+    //        if (hitsegmentlength < raylength)
+    //        {
+    //            delete out;
+    //            return false;
+    //        }
+    //        else
+    //        {
+    //            outnormal = e - m_mesh_center;
+    //            //outnormal.normalize();
+    //            //outnormal = outnormal * (e - out->hitpoint).norm();
+    //            delete out;
+    //            return true;
+    //        }
+    //    }
+    //delete out;
+    //return false;
+}
+
+
+void Mesh::transform_hair(Eigen::Matrix4f& model)
+{
+    hair_part.transform(model);
+}
+void Mesh::reset_hair()
+{
+    hair_part.reset();
 }
 
 Mesh::~Mesh() {
@@ -305,19 +393,22 @@ GLTexture* Mesh::get_texture()
 
 const Eigen::MatrixXf *Mesh::get_hairpos()
 {
-    m_hair = hair_part.get_positions();
-    /*  m_hair = Eigen::MatrixXf(3, m_num_max_hairs * 2);
-      int counter = 0;
-      for (int i = 0; i < ishair.size(); i++)
-      {
-      if (ishair[i] == 1)
-      {
-      m_hair.col(2 * counter + 0) << m_points.col(i).x(), m_points.col(i).y(), m_points.col(i).z();
-      auto offset = m_points.col(i) + m_normals.col(i) * 50.0;
-      m_hair.col(2 * counter + 1) << offset.x(), offset.y(), offset.z();
-      counter++;
-      }
-      }*/
+    m_hair = hair_part.get_positions(false);
+    int hair_point_number = hair_part.get_number_hair();
+    for (int i = 0; i < m_num_guide_hairs; i++)
+    {
+        for (int j = 0; j < m_num_segment_hairs; j++)
+        {
+            Eigen::Vector3f outnormal;
+            int s_id = i * (m_num_segment_hairs + 1) + j + 0;
+            int e_id = i * (m_num_segment_hairs + 1) + j + 1;
+            if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+            {
+                hair_part.add_force(i, j, outnormal);
+            }
+        }
+    }
+    m_hair = hair_part.get_positions(true);
     return &m_hair;
 }
 
@@ -360,3 +451,4 @@ int Mesh::get_number_of_hair()
 {
     return hair_part.get_number_hair();
 }
+

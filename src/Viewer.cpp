@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <Windows.h>
 
+static int framerate = 30;
+
 Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
 
     m_window = new Window(this, "Controls");
@@ -149,6 +151,9 @@ void Viewer::drawContents() {
         slider->setValue(currframe * 1.0f / frame_num);
         text_frameid->setValue("Current Frame: " + std::to_string(currframe));
         model = m_animator->GetView(currframe);
+        Eigen::Matrix4f target_trans = model * init_model.inverse();
+        m_mesh->transform_hair(target_trans);
+
     }
 
     if (m_animator->GetKeyFrameIndex(currframe) != -1)
@@ -171,23 +176,43 @@ void Viewer::drawContents() {
     m_head_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
 
     // show hair
+    if (init_hair_trans == true)
+    {
+        init_hair_trans = false;
+        init_model = model;
+        //m_mesh->transform_hair(model);
+    }
+
     glLineWidth(20.0f);
     m_hair_shader.bind();
-    m_hair_shader.setUniform("MV", mv);
+    if (playing)
+    {
+        Eigen::Matrix4f target_trans = view * (model * init_model * model.inverse());
+        m_hair_shader.setUniform("MV", target_trans);
+    }
+    else
+    {
+        m_mesh->reset_hair();
+        m_hair_shader.setUniform("MV", mv);
+    }
     m_hair_shader.setUniform("P", p);
     m_hair_shader.drawIndexed(GL_LINES, 0, m_mesh->get_number_of_hair());
     this->animate_hair();
 
 
-    Sleep(30);
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
+    if (elapsed < 1000.0 / framerate)
+    {
+        Sleep(1000.0 / framerate - elapsed);
+    }
     char fps[20];
+    elapsed = glfwGetTime() - lasttime;
+    TIME_STEP = elapsed * 100 / 1000.0f;
     sprintf(fps, "%7.2f", 1.0f / elapsed);
     std::string fps_str = fps;
     FPS->setValue("FPS: " + fps_str);
 }
-
 
 bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {
     if (!Screen::scrollEvent(p, rel)) {
@@ -285,16 +310,17 @@ void Viewer::initShaders() {
         "uniform mat4 MV;\n"
         "uniform mat4 P;\n"
 
-        "in vec3 position;\n"
+        "layout (location=0) in vec3 position;\n"
         "in vec3 vec_colors;\n"
 
         "out vec4 lcolor;\n"
+
 
         "void main() {\n"
         "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
         "    gl_Position = P * vpoint_mv;\n"
         "    lcolor = vec4(vec_colors,1.0);\n"
-        "}",
+        "}\n",
 
         /* Fragment shader */
         "#version 330\n"
@@ -302,7 +328,18 @@ void Viewer::initShaders() {
         "out vec4 color;\n"
         "void main() {\n"
         "    color = lcolor;\n"
-        "}"
+        "}\n"
+        //,
+        ///* geometry shader */
+        //"#version 330 core                          \n"
+        //"layout(points) in;                         \n"
+        //"layout(points, max_vertices = 1) out;          \n"
+        //"                                               \n"
+        //"void main() {                                  \n"
+        //"    gl_Position = gl_in[0].gl_Position;        \n"
+        //"    EmitVertex();                              \n"
+        //"    EndPrimitive();                            \n"
+        //"}"
     );
 }
 
