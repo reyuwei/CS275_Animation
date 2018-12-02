@@ -279,26 +279,54 @@ void Viewer::initShaders() {
         "uniform mat4 P;\n"
 
         "in vec3 position;\n"
+        "in vec3 normal;\n"
         "in vec2 vertexUV;\n"
         "out vec2 UV;\n"
+        "out vec3 fnormal;\n"
+        "out vec3 view_dir;\n"
+        "out vec3 light_dir;\n"
 
         "void main() {\n"
         "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
         "    gl_Position = P * vpoint_mv;\n"
         "    UV = vertexUV;\n"
+        "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
+        "    light_dir = vec3(0.0, 3.0, 3.0) - vpoint_mv.xyz;\n"
+        "    view_dir = -vpoint_mv.xyz;\n"
         "}",
 
         /* Fragment shader */
         "#version 330\n"
 
         "in vec2 UV;\n"
+        "in vec3 fnormal;\n"
+        "in vec3 view_dir;\n"
+        "in vec3 light_dir;\n"
+
         "out vec4 color;\n"
+
         "// Values that stay constant for the whole mesh.\n"
+
         "uniform sampler2D tex;\n"
-        "void main()\n"
-        "{"
-        "color = texture( tex, UV ).rgba;\n"
+
+        "void main() {\n"
+        "    vec4 color_uv = texture( tex, UV ).rgba;\n"
+        "    vec3 c = vec3(0.0);\n"
+        "    c += vec3(1.0)*vec3(0.18, 0.1, 0.1);\n"
+        "    vec3 n = normalize(fnormal);\n"
+        "    vec3 v = normalize(view_dir);\n"
+        "    vec3 l = normalize(light_dir);\n"
+        "    float lambert = dot(n,l);\n"
+        "    if(lambert > 0.0) {\n"
+        "        c += vec3(lambert);\n"
+        "        vec3 v = normalize(view_dir);\n"
+        "        vec3 r = reflect(-l,n);\n"
+        "        c += vec3(pow(max(dot(r,v), 0.0), 90.0));\n"
+        "    }\n"
+        "    color = vec4(c, 1.0);\n"
+        "    color *= color_uv;\n"
         "}"
+
     );
 
     m_hair_shader.init(
@@ -310,36 +338,54 @@ void Viewer::initShaders() {
         "uniform mat4 MV;\n"
         "uniform mat4 P;\n"
 
-        "layout (location=0) in vec3 position;\n"
+        "in vec3 position;\n"
+        "in vec3 normal;\n"
         "in vec3 vec_colors;\n"
 
-        "out vec4 lcolor;\n"
-
+        "out vec3 fcolor;\n"
+        "out vec3 fnormal;\n"
+        "out vec3 view_dir;\n"
+        "out vec3 light_dir;\n"
 
         "void main() {\n"
         "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
         "    gl_Position = P * vpoint_mv;\n"
-        "    lcolor = vec4(vec_colors,1.0);\n"
-        "}\n",
+        "    fcolor = vec_colors;\n"
+        "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
+        "    light_dir = vec3(0.0, 30.0, 30.0) - vpoint_mv.xyz;\n"
+        "    view_dir = -vpoint_mv.xyz;\n"
+        "}",
 
         /* Fragment shader */
         "#version 330\n"
-        "in vec4 lcolor;\n"
+
+        "in vec3 fcolor;\n"
+        "in vec3 fnormal;\n"
+        "in vec3 view_dir;\n"
+        "in vec3 light_dir;\n"
+
         "out vec4 color;\n"
+
+        "vec3 kajiyaKay(vec3 V, vec3 L, vec3 T) {                                \n"
+        "vec3 H = normalize(V + L);                                              \n"
+        "                                                                        \n"
+        "float cosLT = dot(L, T);                                                \n"
+        "float sinLT = sqrt(max(0.0, 1.0 - cosLT * cosLT));                      \n"
+        "float diffuse = sinLT;                                                  \n"
+        "                                                                        \n"
+        "float cosHT = dot(H, T);                                                \n"
+        "float sinHT = sqrt(max(0.0, 1.0 - cosHT * cosHT));                      \n"
+        "float specular = pow(sinHT, 3.0);                                       \n"
+        "return diffuse * fcolor + specular * fcolor;                            \n"
+        "}                                                                       \n"
+
         "void main() {\n"
-        "    color = lcolor;\n"
-        "}\n"
-        //,
-        ///* geometry shader */
-        //"#version 330 core                          \n"
-        //"layout(points) in;                         \n"
-        //"layout(points, max_vertices = 1) out;          \n"
-        //"                                               \n"
-        //"void main() {                                  \n"
-        //"    gl_Position = gl_in[0].gl_Position;        \n"
-        //"    EmitVertex();                              \n"
-        //"    EndPrimitive();                            \n"
-        //"}"
+        "    vec3 n = normalize(fnormal);\n"
+        "    vec3 v = normalize(view_dir);\n"
+        "    vec3 l = normalize(light_dir);\n"
+        "    vec3 kjk = kajiyaKay(v,l,n);\n"
+        "    color = vec4(kjk, 1.0);\n"
+        "}"
     );
 }
 
@@ -356,18 +402,23 @@ void Viewer::refresh_mesh() {
     m_head_shader.bind();
     m_head_shader.uploadIndices(*(m_mesh->get_indices()));
     m_head_shader.uploadAttrib("position", *(m_mesh->get_points()));
+    m_head_shader.uploadAttrib("normal", *(m_mesh->get_normals()));
     m_head_shader.uploadAttrib("vertexUV", *(m_mesh->get_uvs()));
 
     m_hair_shader.bind();
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
-    m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
-    m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolors()));
+    m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolor()));
+
+    animate_hair();
 }
 
 void Viewer::animate_hair()
 {
     m_hair_shader.bind();
-    m_hair_shader.uploadAttrib("position", *(m_mesh->get_hairpos()));
+    Eigen::MatrixXf hair_pos, hair_normal;
+    m_mesh->get_hairpos(hair_pos, hair_normal);
+    m_hair_shader.uploadAttrib("position", hair_pos);
+    m_hair_shader.uploadAttrib("normal", hair_normal);
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,

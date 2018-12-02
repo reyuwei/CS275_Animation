@@ -28,8 +28,8 @@ public:
     const MatrixXu *get_indices();
     const Eigen::MatrixXf *get_normals();
     const Eigen::MatrixXf *get_uvs();
-    const Eigen::MatrixXf *get_hairpos();
-    const Eigen::MatrixXf *get_haircolors();
+    void get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal);
+    const Eigen::MatrixXf *get_haircolor();
     const MatrixXu *get_hairindices();
     int get_number_of_hair();
     float get_dist_max();
@@ -65,6 +65,7 @@ private:
     int m_num_segment_hairs = 10;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
+    Eigen::MatrixXf m_hair_n;
     MatrixXu m_hairindices;
 
     KDNode *root;

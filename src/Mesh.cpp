@@ -391,9 +391,9 @@ GLTexture* Mesh::get_texture()
 
 ///////////////////////////////////////////////////////////////////hair
 
-const Eigen::MatrixXf *Mesh::get_hairpos()
+void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
 {
-    m_hair = hair_part.get_positions(false);
+    m_hair = hair_part.get_positions(hair_normal, false);
     int hair_point_number = hair_part.get_number_hair();
     for (int i = 0; i < m_num_guide_hairs; i++)
     {
@@ -408,8 +408,9 @@ const Eigen::MatrixXf *Mesh::get_hairpos()
             }
         }
     }
-    m_hair = hair_part.get_positions(true);
-    return &m_hair;
+    m_hair = hair_part.get_positions(hair_normal, true);
+
+    hair_pos = m_hair;
 }
 
 const MatrixXu *Mesh::get_hairindices()
@@ -423,7 +424,7 @@ const MatrixXu *Mesh::get_hairindices()
     return &m_hairindices;
 }
 
-const Eigen::MatrixXf *Mesh::get_haircolors()
+const Eigen::MatrixXf *Mesh::get_haircolor()
 {
     m_hair_c = hair_part.get_colors();
     return &m_hair_c;

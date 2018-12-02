@@ -271,9 +271,11 @@ public:
         return sample_p + guide_p;
     }
 
-    Eigen::MatrixXf get_positions(bool doanimate = false)
+    Eigen::MatrixXf get_positions(Eigen::MatrixXf &hair_points_normal, bool doanimate = false)
     {
+        hair_points_normal = Eigen::MatrixXf(3, guide_strand_count *(interpolate_count + 1)* bline_sample_points);
         Eigen::MatrixXf hair_points = Eigen::MatrixXf(3, guide_strand_count *(interpolate_count + 1)* bline_sample_points);
+
         for (int i = 0; i < guide_strand_count; i++)
         {
             std::vector<Eigen::Vector3f> control_points = guide_strands[i].Animate(doanimate);
@@ -282,11 +284,38 @@ public:
                 Eigen::Vector3f sample_p = BazierLinePoint(k*1.0 / bline_sample_points, control_points);
                 hair_points.col(i * bline_sample_points + k) << sample_p.x(), sample_p.y(), sample_p.z();
             }
+            for (int k = 0; k < bline_sample_points; k++)
+            {
+                int current_id = i * bline_sample_points + k;
+                Eigen::Vector3f tangent(0, 0, 0);
+                Eigen::Vector3f before, after, current;
+                current = hair_points.col(current_id);
+                if (k == 0)
+                {
+                    after = hair_points.col(current_id + 1);
+                    tangent = after - current;
+                }
+                else if (k == bline_sample_points - 1)
+                {
+                    before = hair_points.col(current_id - 1);
+                    tangent = current - before;
+                }
+                else
+                {
+                    before = hair_points.col(current_id - 1);
+                    after = hair_points.col(current_id + 1);
+                    tangent = 0.5f * (after - before);
+                }
+                hair_points_normal.col(current_id) << tangent.x(), tangent.y(), tangent.z();
+            }
         }
+
+
         for (int i = 0; i < guide_strand_count; i++)
         {
             Eigen::Vector3f dir_ = guide_strands[i].get_root_dir();
             for (int j = 0; j < interpolate_count; j++)
+            {
                 for (int k = 0; k < bline_sample_points; k++)
                 {
                     int randj = j * 1.0f / interpolate_count * 10.0f;
@@ -295,6 +324,33 @@ public:
                     hair_points.col((guide_strand_count + (i*interpolate_count + j))* bline_sample_points + k) <<
                         inter_p.x(), inter_p.y(), inter_p.z();
                 }
+
+                for (int k = 0; k < bline_sample_points; k++)
+                {
+                    int current_id = (guide_strand_count + (i*interpolate_count + j))* bline_sample_points + k;
+
+                    Eigen::Vector3f tangent(0, 0, 0);
+                    Eigen::Vector3f before, after, current;
+                    current = hair_points.col(current_id);
+                    if (k == 0)
+                    {
+                        after = hair_points.col(current_id + 1);
+                        tangent = after - current;
+                    }
+                    else if (k == bline_sample_points - 1)
+                    {
+                        before = hair_points.col(current_id - 1);
+                        tangent = current - before;
+                    }
+                    else
+                    {
+                        before = hair_points.col(current_id - 1);
+                        after = hair_points.col(current_id + 1);
+                        tangent = 0.5f * (after - before);
+                    }
+                    hair_points_normal.col(current_id) << tangent.x(), tangent.y(), tangent.z();
+                }
+            }
         }
         return hair_points;
 
@@ -303,15 +359,25 @@ public:
     Eigen::MatrixXf get_colors()
     {
         int pointcount = guide_strand_count * (segment_count + 1) * (interpolate_count + 1);
+        int haircount = guide_strand_count  * (interpolate_count + 1);
         Eigen::MatrixXf hair_point_colors = Eigen::MatrixXf(3, pointcount);
-        for (int i = 0; i + 1 < pointcount; i += 2)
+        //for (int i = 0; i + 1 < pointcount; i += 2)
+        for (int i = 0; i < haircount; i++)
         {
             float r = 1.0f * rand() / RAND_MAX;
             float g = 1.0f * rand() / RAND_MAX;
             float b = 1.0f * rand() / RAND_MAX;
-            //hair_point_colors.col(i) << 1.0f, 0.0f, 0.0f;
-            hair_point_colors.col(i) << r, g, b;
-            hair_point_colors.col(i + 1) << r, g, b;
+
+            r = 237 / 255.0f;
+            g = 75 / 255.0f;
+            b = 75 / 255.0f;
+
+            for (int k = 0; k < segment_count + 1; k++)
+            {
+                hair_point_colors.col(i*(segment_count + 1) + k) << r, g, b;
+            }
+            //hair_point_colors.col(i) << r, g, b;
+            //hair_point_colors.col(i + 1) << r, g, b;
         }
         return hair_point_colors;
     }
@@ -355,5 +421,7 @@ public:
             guide_strands[i].reset();
         }
     }
+
+
 };
 
