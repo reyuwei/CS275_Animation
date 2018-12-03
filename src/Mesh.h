@@ -60,9 +60,9 @@ private:
     std::vector<float> ishair;
     Hair hair_part;
     int m_num_max_hairs;
-    int m_num_guide_hairs = 100;
-    int m_num_interpolate_hairs = 10;
-    int m_num_segment_hairs = 10;
+    int m_num_guide_hairs = 500;
+    int m_num_interpolate_hairs = 20;
+    int m_num_segment_hairs = 5;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
     Eigen::MatrixXf m_hair_n;

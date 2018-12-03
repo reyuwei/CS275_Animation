@@ -58,7 +58,7 @@ private:
     Eigen::Vector3f endpos = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
     Eigen::Vector3f velocity = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
     float k_stiffness = 30.0f;
-    float k_damping = 100.0f;
+    float k_damping = 30.0f;
 
 public:
     Spring() {}
@@ -231,7 +231,7 @@ class Hair
     int interpolate_count = -1;
     int guide_strand_count = -1;
     int segment_count = -1;
-    int bline_sample_points = 2;
+    int bline_sample_points = 20;
 public:
     Hair() {}
     Hair(Eigen::MatrixXf hairpoints_, Eigen::MatrixXf hairnormals_, int guide_strand_count_, int interpolate_count_, int segment_count_)
@@ -282,6 +282,7 @@ public:
             for (int k = 0; k < bline_sample_points; k++)
             {
                 Eigen::Vector3f sample_p = BazierLinePoint(k*1.0 / bline_sample_points, control_points);
+                //Eigen::Vector3f sample_p = control_points[i];
                 hair_points.col(i * bline_sample_points + k) << sample_p.x(), sample_p.y(), sample_p.z();
             }
             for (int k = 0; k < bline_sample_points; k++)
@@ -358,7 +359,7 @@ public:
 
     Eigen::MatrixXf get_colors()
     {
-        int pointcount = guide_strand_count * (segment_count + 1) * (interpolate_count + 1);
+        int pointcount = guide_strand_count * (bline_sample_points) * (interpolate_count + 1);
         int haircount = guide_strand_count  * (interpolate_count + 1);
         Eigen::MatrixXf hair_point_colors = Eigen::MatrixXf(3, pointcount);
         //for (int i = 0; i + 1 < pointcount; i += 2)
@@ -368,13 +369,17 @@ public:
             float g = 1.0f * rand() / RAND_MAX;
             float b = 1.0f * rand() / RAND_MAX;
 
-            r = 237 / 255.0f;
-            g = 75 / 255.0f;
-            b = 75 / 255.0f;
+            //r = 237 / 255.0f;
+            //g = 75 / 255.0f;
+            //b = 75 / 255.0f;
 
-            for (int k = 0; k < segment_count + 1; k++)
+            r = 0.8f;
+            g = 0.8f;
+            b = 0.0f;
+
+            for (int k = 0; k < bline_sample_points; k++)
             {
-                hair_point_colors.col(i*(segment_count + 1) + k) << r, g, b;
+                hair_point_colors.col(i*(bline_sample_points)+k) << r, g, b;
             }
             //hair_point_colors.col(i) << r, g, b;
             //hair_point_colors.col(i + 1) << r, g, b;

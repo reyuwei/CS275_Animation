@@ -73,12 +73,12 @@ bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnorm
         if (!isNull(out->hitpoint))
         {
             float hitsegmentlength = (out->hitpoint - s).norm();
-            if (hitsegmentlength <= SPRING_REST_LENGTH)
-            {
-                delete out;
-                return false;
-            }
-            else
+            //if (hitsegmentlength <= SPRING_REST_LENGTH)
+            //{
+            //    delete out;
+            //    return false;
+            //}
+            //else
             {
                 outnormal = e - m_mesh_center;
                 outnormal.normalize();
