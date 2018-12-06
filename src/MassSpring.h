@@ -119,7 +119,7 @@ public:
         Eigen::Vector3f acceleration = general_force*1.0f / MASS;
         velocity = velocity + acceleration * TIME_STEP;
 
-        Eigen::Vector3f extra_v = extra_dir * velocity.norm()*10.0f * TIME_STEP;
+        Eigen::Vector3f extra_v = extra_dir * velocity.norm() * TIME_STEP;
         velocity += extra_v;
         if (velocity.norm() < 0.2f)
             velocity << 0, 0, 0;
@@ -266,7 +266,7 @@ public:
         Eigen::Vector3f u = v.cross(dir_);
         u.normalize();
 
-        int a = 2; int b = 2;
+        int a = 3; int b = 3;
         t = (t * 360) * 3.14 / 180.0;
         t = a + b*t;
 

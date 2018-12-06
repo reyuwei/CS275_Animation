@@ -67,53 +67,52 @@ Tri* Mesh::GetFacei(int i)
 bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
 {
     Intersect* out;
-    Ray ray(s, e - s);
-    out = root->Hit(root, ray);
-    if (out != NULL)
-        if (!isNull(out->hitpoint))
-        {
-            float hitsegmentlength = (out->hitpoint - s).norm();
-            //if (hitsegmentlength <= SPRING_REST_LENGTH)
-            //{
-            //    delete out;
-            //    return false;
-            //}
-            //else
-            {
-                outnormal = e - m_mesh_center;
-                Intersect* out_ = root->Hit(root, Ray(m_mesh_center, e - m_mesh_center));
-                outnormal.normalize();
-                delete out;
-                return true;
-            }
-        }
-    delete out;
-    //outnormal = (e - m_mesh_center).normalized();
-    return false;
-
-    //Ray ray(m_mesh_center, e - m_mesh_center);
+    //Ray ray(s, e - s);
     //out = root->Hit(root, ray);
     //if (out != NULL)
     //    if (!isNull(out->hitpoint))
     //    {
-    //        float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
-    //        float raylength = (e - m_mesh_center).norm();
-    //        if (hitsegmentlength < raylength)
-    //        {
-    //            delete out;
-    //            return false;
-    //        }
-    //        else
+    //        float hitsegmentlength = (out->hitpoint - s).norm();
+    //        //if (hitsegmentlength <= SPRING_REST_LENGTH)
+    //        //{
+    //        //    delete out;
+    //        //    return false;
+    //        //}
+    //        //else
     //        {
     //            outnormal = e - m_mesh_center;
-    //            //outnormal.normalize();
-    //            //outnormal = outnormal * (e - out->hitpoint).norm();
+    //            outnormal.normalize();
     //            delete out;
     //            return true;
     //        }
     //    }
     //delete out;
+    ////outnormal = (e - m_mesh_center).normalized();
     //return false;
+
+    Ray ray(m_mesh_center, e - m_mesh_center);
+    out = root->Hit(root, ray);
+    if (out != NULL)
+        if (!isNull(out->hitpoint))
+        {
+            float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
+            float raylength = (e - m_mesh_center).norm();
+            if (hitsegmentlength < raylength)
+            {
+                delete out;
+                return false;
+            }
+            else
+            {
+                outnormal = out->hitpoint - e;
+                //outnormal.normalize();
+                //outnormal = outnormal * (e - out->hitpoint).norm();
+                delete out;
+                return true;
+            }
+        }
+    delete out;
+    return false;
 }
 
 
@@ -394,23 +393,24 @@ GLTexture* Mesh::get_texture()
 
 void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
 {
-    m_hair = hair_part.get_contrlpoints();
+    //m_hair = hair_part.get_contrlpoints();
 
-    for (int i = 0; i < m_num_guide_hairs; i++)
-    {
-        for (int j = 0; j < m_num_segment_hairs; j++)
-        {
-            Eigen::Vector3f outnormal;
-            int s_id = i * (m_num_segment_hairs + 1) + j + 0;
-            int e_id = i * (m_num_segment_hairs + 1) + j + 1;
-            if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
-            {
-                hair_part.add_force(i, j, outnormal);
-            }
-        }
-    }
+    //for (int i = 0; i < m_num_guide_hairs; i++)
+    //{
+    //    for (int j = 0; j < m_num_segment_hairs; j++)
+    //    {
+    //        Eigen::Vector3f outnormal;
+    //        int s_id = i * (m_num_segment_hairs + 1) + j + 0;
+    //        int e_id = i * (m_num_segment_hairs + 1) + j + 1;
+    //        if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+    //        {
+    //            hair_part.add_force(i, j, outnormal);
+    //        }
+    //    }
+    //}
 
-    m_hair = hair_part.get_positions(hair_normal, true);
+    //m_hair = hair_part.get_positions(hair_normal, true);
+    m_hair = hair_part.get_positions(hair_normal, false);
 
     hair_pos = m_hair;
 }

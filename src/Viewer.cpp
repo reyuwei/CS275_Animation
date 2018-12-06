@@ -183,7 +183,6 @@ void Viewer::drawContents() {
         //m_mesh->transform_hair(model);
     }
 
-    glLineWidth(20.0f);
     m_hair_shader.bind();
     if (playing)
     {
@@ -415,7 +414,7 @@ void Viewer::refresh_mesh() {
 
 void Viewer::animate_hair()
 {
-    m_hair_shader.bind();
+    //m_hair_shader.bind();
     Eigen::MatrixXf hair_pos, hair_normal;
     m_mesh->get_hairpos(hair_pos, hair_normal);
     m_hair_shader.uploadAttrib("position", hair_pos);
