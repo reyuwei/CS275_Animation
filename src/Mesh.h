@@ -13,7 +13,7 @@
 #include "MassSpring.h"
 #include "KDTree.h"
 
-typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
+//typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
 
 class Mesh {
 public:
@@ -60,8 +60,8 @@ private:
     std::vector<float> ishair;
     Hair hair_part;
     int m_num_max_hairs;
-    int m_num_guide_hairs = 500;
-    int m_num_interpolate_hairs = 20;
+    int m_num_guide_hairs = 10;
+    int m_num_interpolate_hairs = 0;
     int m_num_segment_hairs = 5;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
@@ -71,7 +71,6 @@ private:
     KDNode *root;
 
 };
-
 
 
 

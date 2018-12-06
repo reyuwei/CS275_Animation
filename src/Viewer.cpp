@@ -208,10 +208,12 @@ void Viewer::drawContents() {
     }
     char fps[20];
     elapsed = glfwGetTime() - lasttime;
-    TIME_STEP = elapsed * 100 / 1000.0f;
+    TIME_STEP = elapsed * 300 / 1000.0f;
     sprintf(fps, "%7.2f", 1.0f / elapsed);
     std::string fps_str = fps;
     FPS->setValue("FPS: " + fps_str);
+
+
 }
 
 bool Viewer::scrollEvent(const Vector2i &p, const Vector2f &rel) {
@@ -375,7 +377,8 @@ void Viewer::initShaders() {
         "                                                                        \n"
         "float cosHT = dot(H, T);                                                \n"
         "float sinHT = sqrt(max(0.0, 1.0 - cosHT * cosHT));                      \n"
-        "float specular = pow(sinHT, 3.0);                                       \n"
+        "float dirAtten = smoothstep(-1.0, 0.0, dot(H, T));                      \n"
+        "float specular = dirAtten*pow(sinHT, 0.2);                              \n"
         "return diffuse * fcolor + specular * fcolor;                            \n"
         "}                                                                       \n"
 
@@ -404,7 +407,6 @@ void Viewer::refresh_mesh() {
     m_head_shader.uploadAttrib("position", *(m_mesh->get_points()));
     m_head_shader.uploadAttrib("normal", *(m_mesh->get_normals()));
     m_head_shader.uploadAttrib("vertexUV", *(m_mesh->get_uvs()));
-
     m_hair_shader.bind();
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
     m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolor()));

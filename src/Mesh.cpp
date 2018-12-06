@@ -3,7 +3,6 @@
 //
 
 #include "Mesh.h"
-
 #include <iostream>
 #include <algorithm>
 #include <Eigen/Dense>
@@ -13,13 +12,7 @@
 #define MIN -1e10
 #define MAX 1e10
 
-bool isNull(Eigen::Vector3f v)
-{
-    if (v.x() == 0 && v.y() == 0 && v.z() == 0)
-        return true;
-    else
-        return false;
-}
+bool isEigenV3Null(Eigen::Vector3f v);
 
 bool ExistsFile(const std::string &path) {
     std::fstream _file;
@@ -70,45 +63,36 @@ bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnorm
     Ray ray(s, e - s);
     out = root->Hit(root, ray);
     if (out != NULL)
-        if (!isNull(out->hitpoint))
+        if (!isEigenV3Null(out->hitpoint))
         {
-            float hitsegmentlength = (out->hitpoint - s).norm();
-            //if (hitsegmentlength <= SPRING_REST_LENGTH)
-            //{
-            //    delete out;
-            //    return false;
-            //}
-            //else
-            {
-                outnormal = e - m_mesh_center;
-                outnormal.normalize();
-                delete out;
-                return true;
-            }
+            outnormal = e - m_mesh_center;
+            outnormal.normalize();
+            delete out;
+            return true;
         }
     delete out;
-    //outnormal = (e - m_mesh_center).normalized();
     return false;
 
+    //Intersect* out;
     //Ray ray(m_mesh_center, e - m_mesh_center);
     //out = root->Hit(root, ray);
     //if (out != NULL)
-    //    if (!isNull(out->hitpoint))
+    //    if (!isEigenV3Null(out->hitpoint))
     //    {
-    //        float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
-    //        float raylength = (e - m_mesh_center).norm();
-    //        if (hitsegmentlength < raylength)
+    //        float hitlength = (out->hitpoint - m_mesh_center).norm();
+    //        float raylength = (m_mesh_center - e).norm();
+    //        if (hitlength > raylength)
     //        {
+    //            outnormal = e - m_mesh_center;
+    //            outnormal.normalize();
+    //            outnormal = (out->hitpoint - e).norm() * outnormal;
     //            delete out;
-    //            return false;
+    //            return true;
     //        }
     //        else
     //        {
-    //            outnormal = e - m_mesh_center;
-    //            //outnormal.normalize();
-    //            //outnormal = outnormal * (e - out->hitpoint).norm();
     //            delete out;
-    //            return true;
+    //            return false;
     //        }
     //    }
     //delete out;
@@ -409,7 +393,6 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
         }
     }
     m_hair = hair_part.get_positions(hair_normal, true);
-
     hair_pos = m_hair;
 }
 
@@ -446,6 +429,7 @@ void Mesh::generateHair()
     }
     m_num_interpolate_hairs = max(1, m_num_interpolate_hairs);
     hair_part = Hair(hairroot_points, hairroot_normals, m_num_guide_hairs, m_num_interpolate_hairs, m_num_segment_hairs);
+    //hair_part.SetHead(this);
 }
 
 int Mesh::get_number_of_hair()
