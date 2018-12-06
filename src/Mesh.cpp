@@ -394,8 +394,8 @@ GLTexture* Mesh::get_texture()
 
 void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
 {
-    m_hair = hair_part.get_positions(hair_normal, false);
-    int hair_point_number = hair_part.get_number_hair();
+    m_hair = hair_part.get_contrlpoints();
+
     for (int i = 0; i < m_num_guide_hairs; i++)
     {
         for (int j = 0; j < m_num_segment_hairs; j++)
@@ -409,6 +409,7 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
             }
         }
     }
+
     m_hair = hair_part.get_positions(hair_normal, true);
 
     hair_pos = m_hair;

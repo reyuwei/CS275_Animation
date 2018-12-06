@@ -36,16 +36,18 @@ static int combinator(int n, int m)
 
 
 
-static Eigen::Vector3f BazierLinePoint(float t, std::vector<Eigen::Vector3f> control_points)
-{
-    Eigen::Vector3f sample_p(0, 0, 0);
-    int order = control_points.size();
-    for (int i = 0; i < order; i++)
-    {
-        sample_p += control_points[i] * pow((1 - t), order - 1 - i)*pow(t, i) * combinator(order - 1, i);
-    }
-    return sample_p;
-}
+//static Eigen::Vector3f BazierLinePoint(float t, std::vector<Eigen::Vector3f> control_points)
+//{
+//    Eigen::Vector3f sample_p(0, 0, 0);
+//    int order = control_points.size();
+//    for (int i = 0; i < order; i++)
+//    {
+//        sample_p += control_points[i] * pow((1 - t), order - 1 - i)*pow(t, i) * combinator(order - 1, i);
+//    }
+//    return sample_p;
+//}
+
+
 
 
 
@@ -232,13 +234,15 @@ class Hair
     int interpolate_count = -1;
     int guide_strand_count = -1;
     int segment_count = -1;
-    int bline_sample_points = 20;
+    int bline_sample_points = -1;
+    int bline_points_perseg = 4;
 public:
     Hair() {}
     Hair(Eigen::MatrixXf hairpoints_, Eigen::MatrixXf hairnormals_, int guide_strand_count_, int interpolate_count_, int segment_count_)
         :guide_strand_count(guide_strand_count_), interpolate_count(interpolate_count_), segment_count(segment_count_)
     {
-        bline_sample_points = segment_count + 1;
+        //bline_sample_points = segment_count + 1;
+        bline_sample_points = bline_points_perseg * segment_count + segment_count + 1;
         int maxhaircount = hairpoints_.cols();
         for (int i = 0; i < guide_strand_count_; i++)
         {
@@ -272,6 +276,21 @@ public:
         return sample_p + guide_p;
     }
 
+    Eigen::MatrixXf get_contrlpoints()
+    {
+        Eigen::MatrixXf hair_points = Eigen::MatrixXf(3, guide_strand_count * (segment_count + 1));
+        for (int i = 0; i < guide_strand_count; i++)
+        {
+            std::vector<Eigen::Vector3f> control_points = guide_strands[i].Animate(false);
+            for (int k = 0; k < (segment_count + 1); k++)
+            {
+                Eigen::Vector3f sample_p = control_points[k];
+                hair_points.col(i * (segment_count + 1) + k) << sample_p.x(), sample_p.y(), sample_p.z();
+            }
+        }
+        return hair_points;
+    }
+
     Eigen::MatrixXf get_positions(Eigen::MatrixXf &hair_points_normal, bool doanimate = false)
     {
         hair_points_normal = Eigen::MatrixXf(3, guide_strand_count *(interpolate_count + 1)* bline_sample_points);
@@ -280,10 +299,11 @@ public:
         for (int i = 0; i < guide_strand_count; i++)
         {
             std::vector<Eigen::Vector3f> control_points = guide_strands[i].Animate(doanimate);
+            std::vector<Eigen::Vector3f> bazier_points = BazierLinePoint(bline_points_perseg, control_points);
+            assert(bazier_points.size() == bline_sample_points);
             for (int k = 0; k < bline_sample_points; k++)
             {
-                Eigen::Vector3f sample_p = BazierLinePoint(k*1.0 / bline_sample_points, control_points);
-                //Eigen::Vector3f sample_p = control_points[i];
+                Eigen::Vector3f sample_p = bazier_points[k];
                 hair_points.col(i * bline_sample_points + k) << sample_p.x(), sample_p.y(), sample_p.z();
             }
             for (int k = 0; k < bline_sample_points; k++)
@@ -427,7 +447,41 @@ public:
             guide_strands[i].reset();
         }
     }
+    std::vector<Eigen::Vector3f> BazierLinePoint(int point_per_segment, std::vector<Eigen::Vector3f> control_points)
+    {
+        std::vector<Eigen::Vector3f> results;
 
+        float step = 1.0f / (point_per_segment + 1);
+        for (int i = 0; i < control_points.size() - 1; i++)
+        {
+            for (float t = 0; t < 1; t += step)
+            {
+                //results.push_back(control_points[i]);
+
+                Eigen::Vector3f sample_p(0, 0, 0);
+                Eigen::Vector3f p0, p1, p00, p2;
+                p0 << control_points[i].x(), control_points[i].y(), control_points[i].z();
+                p1 << control_points[i + 1].x(), control_points[i + 1].y(), control_points[i + 1].z();
+
+                p00 = p0; p2 = p1;
+
+                if (i - 1 >= 0) p00 << control_points[i - 1].x(), control_points[i - 1].y(), control_points[i - 1].z();
+                if (i + 2 < control_points.size()) p2 << control_points[i + 2].x(), control_points[i + 2].y(), control_points[i + 2].z();
+
+                Eigen::Vector3f c0 = p0 + (p1 - p00) / 6;
+                Eigen::Vector3f d0 = p1 - (p2 - p0) / 6;
+
+                float a = pow(1 - t, 3);
+                float b = 3 * t * pow(1 - t, 2);
+                float c = 3 * t * t * (1 - t);
+                float d = t * t * t;
+                sample_p = a * p0 + b * c0 + c * d0 + d * p1;
+                results.push_back(sample_p);
+            }
+        }
+        results.push_back(control_points[control_points.size() - 1]);
+        return results;
+    }
 
 };
 
