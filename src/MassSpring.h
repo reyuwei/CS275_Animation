@@ -107,7 +107,7 @@ public:
         //std::cout << extra_dir.norm() << std::endl;
         Eigen::Vector3f extraF = k_stiffness * extra_dir * 130.0f;
         //Eigen::Vector3f extraF = k_stiffness * extra_dir * 45.0f;
-        Eigen::Vector3f general_force = getStiffF() + extraF + gravityF - getDampingF();
+        Eigen::Vector3f general_force = getStiffF() + gravityF - getDampingF();
 
         if (after != NULL)
         {
@@ -117,9 +117,10 @@ public:
         Eigen::Vector3f acceleration = general_force*1.0f / MASS;
         velocity = velocity + acceleration * TIME_STEP;
 
-        //std::cout << acceleration.norm() << std::endl;
-        if (acceleration.norm() < 0.5f)
-            acceleration << 0, 0, 0;
+        Eigen::Vector3f extra_v = extra_dir * velocity.norm()*10.0f * TIME_STEP;
+        velocity += extra_v;
+        if (velocity.norm() < 0.2f)
+            velocity << 0, 0, 0;
 
         endpos = endpos + velocity * TIME_STEP;
 

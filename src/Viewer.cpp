@@ -291,7 +291,7 @@ void Viewer::initShaders() {
         "    gl_Position = P * vpoint_mv;\n"
         "    UV = vertexUV;\n"
         "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
-        "    light_dir = vec3(0.0, 3.0, 3.0) - vpoint_mv.xyz;\n"
+        "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
         "    view_dir = -vpoint_mv.xyz;\n"
         "}",
 
@@ -352,7 +352,7 @@ void Viewer::initShaders() {
         "    gl_Position = P * vpoint_mv;\n"
         "    fcolor = vec_colors;\n"
         "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
-        "    light_dir = vec3(0.0, 30.0, 30.0) - vpoint_mv.xyz;\n"
+        "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
         "    view_dir = -vpoint_mv.xyz;\n"
         "}",
 
@@ -375,7 +375,8 @@ void Viewer::initShaders() {
         "                                                                        \n"
         "float cosHT = dot(H, T);                                                \n"
         "float sinHT = sqrt(max(0.0, 1.0 - cosHT * cosHT));                      \n"
-        "float specular = pow(sinHT, 3.0);                                       \n"
+        "float dirAtten = smoothstep(-1.0, 0.0, dot(H, T));                      \n"
+        "float specular = dirAtten * pow(sinHT, 0.2);                            \n"
         "return diffuse * fcolor + specular * fcolor;                            \n"
         "}                                                                       \n"
 

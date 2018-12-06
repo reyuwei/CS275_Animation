@@ -81,6 +81,7 @@ bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnorm
             //else
             {
                 outnormal = e - m_mesh_center;
+                Intersect* out_ = root->Hit(root, Ray(m_mesh_center, e - m_mesh_center));
                 outnormal.normalize();
                 delete out;
                 return true;
