@@ -393,24 +393,23 @@ GLTexture* Mesh::get_texture()
 
 void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
 {
-    //m_hair = hair_part.get_contrlpoints();
+    m_hair = hair_part.get_contrlpoints();
 
-    //for (int i = 0; i < m_num_guide_hairs; i++)
-    //{
-    //    for (int j = 0; j < m_num_segment_hairs; j++)
-    //    {
-    //        Eigen::Vector3f outnormal;
-    //        int s_id = i * (m_num_segment_hairs + 1) + j + 0;
-    //        int e_id = i * (m_num_segment_hairs + 1) + j + 1;
-    //        if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
-    //        {
-    //            hair_part.add_force(i, j, outnormal);
-    //        }
-    //    }
-    //}
+    for (int i = 0; i < m_num_guide_hairs; i++)
+    {
+        for (int j = 0; j < m_num_segment_hairs; j++)
+        {
+            Eigen::Vector3f outnormal;
+            int s_id = i * (m_num_segment_hairs + 1) + j + 0;
+            int e_id = i * (m_num_segment_hairs + 1) + j + 1;
+            if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+            {
+                hair_part.add_force(i, j, outnormal);
+            }
+        }
+    }
 
-    //m_hair = hair_part.get_positions(hair_normal, true);
-    m_hair = hair_part.get_positions(hair_normal, false);
+    m_hair = hair_part.get_positions(hair_normal, true);
 
     hair_pos = m_hair;
 }

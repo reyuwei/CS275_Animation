@@ -49,6 +49,8 @@ add_executable(tinyobjviewer
     src/Mesh.cpp
     src/GLTexture.h
     src/KeyFrameAnimator.h
+    src/MassSpring.h
+    src/KDTree.h
     src/Viewer.h
     src/Mesh.h
     )

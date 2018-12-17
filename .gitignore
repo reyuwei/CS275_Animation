@@ -186,4 +186,5 @@ cmake-build-debug/
 
 build/*
 build_dell/*
+build_laptop/*
 

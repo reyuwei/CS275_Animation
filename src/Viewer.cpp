@@ -207,7 +207,7 @@ void Viewer::drawContents() {
     }
     char fps[20];
     elapsed = glfwGetTime() - lasttime;
-    TIME_STEP = elapsed * 100 / 1000.0f;
+    TIME_STEP = elapsed * 300 / 1000.0f;
     sprintf(fps, "%7.2f", 1.0f / elapsed);
     std::string fps_str = fps;
     FPS->setValue("FPS: " + fps_str);
@@ -365,26 +365,30 @@ void Viewer::initShaders() {
 
         "out vec4 color;\n"
 
-        "vec3 kajiyaKay(vec3 V, vec3 L, vec3 T) {                                \n"
-        "vec3 H = normalize(V + L);                                              \n"
-        "                                                                        \n"
-        "float cosLT = dot(L, T);                                                \n"
-        "float sinLT = sqrt(max(0.0, 1.0 - cosLT * cosLT));                      \n"
-        "float diffuse = sinLT;                                                  \n"
-        "                                                                        \n"
-        "float cosHT = dot(H, T);                                                \n"
-        "float sinHT = sqrt(max(0.0, 1.0 - cosHT * cosHT));                      \n"
-        "float dirAtten = smoothstep(-1.0, 0.0, dot(H, T));                      \n"
-        "float specular = dirAtten * pow(sinHT, 0.2);                            \n"
-        "return diffuse * fcolor + specular * fcolor;                            \n"
-        "}                                                                       \n"
+        "vec3 kajiyaKay(vec3 V, vec3 L, vec3 T) {                                  \n"
+        "float TdotL = dot(T, L);                                                  \n"
+        "float TdotV = dot(T, V);                                                  \n"
+        "vec3 specolor = vec3(1.0)*vec3(0.18, 0.1, 0.1);                           \n"
+        "// The diffuse component                                                  \n"
+        "float kajiyaDiff = sin(acos(TdotL));                                      \n"
+        "kajiyaDiff = pow(max(kajiyaDiff,0.0), 10);                                \n"
+        "                                                                          \n"
+        "// The specular component                                                 \n"
+        "float kajiyaSpec = cos(abs(acos(TdotL) - acos(-TdotV)));                  \n"
+        "kajiyaSpec = pow(max(0.0,kajiyaSpec), 100);                               \n"
+        "                                                                          \n"
+        "// The fragment color                                                     \n"
+        "vec3 outcolor = fcolor * 0.6 + fcolor * 0.5 * kajiyaDiff + specolor * kajiyaSpec;\n"
+        "return outcolor;                                                          \n"
+        "}                                                                         \n"
+
 
         "void main() {\n"
         "    vec3 n = normalize(fnormal);\n"
         "    vec3 v = normalize(view_dir);\n"
         "    vec3 l = normalize(light_dir);\n"
         "    vec3 kjk = kajiyaKay(v,l,n);\n"
-        "    color = vec4(kjk, 1.0);\n"
+        "    color = vec4(kjk, 0.725);\n"
         "}"
     );
 }
