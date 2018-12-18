@@ -31,6 +31,7 @@
 #include <map>
 #include "Mesh.h"
 #include "KeyFrameAnimator.h"
+#include "Air.h"
 
 using namespace nanogui;
 
@@ -44,7 +45,7 @@ public:
     virtual void draw(NVGcontext *ctx);
     virtual void drawContents();
 
-
+    void animate_air();
     void animate_hair();
     void refresh_mesh();
     void refresh_trackball_center();
@@ -82,10 +83,12 @@ private:
     // Variables for the viewer
     nanogui::GLShader m_head_shader;
     nanogui::GLShader m_hair_shader;
+    nanogui::GLShader m_air_shader;
     nanogui::Window *m_window;
     nanogui::Window *m_window_fps;
 
     Mesh* m_mesh;
+    Fluid* m_air;
 
     bool playing = false;
 

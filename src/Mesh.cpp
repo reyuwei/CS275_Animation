@@ -115,11 +115,11 @@ bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnorm
     return false;
 }
 
-
 void Mesh::transform_hair(Eigen::Matrix4f& model)
 {
     hair_part.transform(model);
 }
+
 void Mesh::reset_hair()
 {
     hair_part.reset();
@@ -198,7 +198,7 @@ bool Mesh::load_mesh(const std::string &filename) {
             }
 
             m_mesh_center = (m_bmax + m_bmin) / 2;
-            m_dist_max = max((m_bmax - m_mesh_center).norm(), (m_bmax - m_mesh_center).norm());
+            m_dist_max = max((m_bmin - m_mesh_center).norm(), (m_bmax - m_mesh_center).norm());
 
             float n[3][3];
             if (attrib.normals.size() > 0) {

@@ -193,8 +193,8 @@ KDNode::KDNode()
 
 KDNode* KDNode::Build(std::vector<Tri*>& tris, int depth)
 {
-    //if (depth >= 5)
-    //    return NULL;
+    if (depth >= 5)
+        return NULL;
 
     //empty node
     KDNode* node = new KDNode();

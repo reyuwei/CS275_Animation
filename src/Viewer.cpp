@@ -99,7 +99,7 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
     //m_mesh = new Mesh("teapot.obj");
 
     m_mesh = new Mesh("..\\..\\model\\Pasha_guard_head.obj");
-
+    m_air = new Fluid(m_mesh->get_mesh_center(), m_mesh->get_dist_max() * 2);
 
     this->refresh_mesh();
     this->refresh_trackball_center();
@@ -198,6 +198,11 @@ void Viewer::drawContents() {
     m_hair_shader.drawIndexed(GL_LINES, 0, m_mesh->get_number_of_hair());
     this->animate_hair();
 
+    m_air_shader.bind();
+    m_air_shader.setUniform("MV", mv);
+    m_air_shader.setUniform("P", p);
+    m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
+    this->animate_air();
 
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
@@ -269,128 +274,137 @@ bool Viewer::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
 
 void Viewer::initShaders() {
     // Shaders
-    m_head_shader.init(
-        "a_simple_shader",
+    m_head_shader.initFromFiles("a_simple_shader", "..\\shader\\head.vert", "..\\shader\\head.frag");
+    m_hair_shader.initFromFiles("a_simple_hair_shader", "..\\shader\\hair.vert", "..\\shader\\hair.frag");
+    m_air_shader.initFromFiles("a_simple_velocity_field_shader", "..\\shader\\air.vert", "..\\shader\\air.frag");
+#pragma region shader_code
+    //m_head_shader.init(
+//    "a_simple_shader",
 
-        /* Vertex shader */
-        "#version 330\n"
-        "uniform mat4 MV;\n"
-        "uniform mat4 P;\n"
+//    /* Vertex shader */
+//    "#version 330\n"
+//    "uniform mat4 MV;\n"
+//    "uniform mat4 P;\n"
 
-        "in vec3 position;\n"
-        "in vec3 normal;\n"
-        "in vec2 vertexUV;\n"
-        "out vec2 UV;\n"
-        "out vec3 fnormal;\n"
-        "out vec3 view_dir;\n"
-        "out vec3 light_dir;\n"
+//    "in vec3 position;\n"
+//    "in vec3 normal;\n"
+//    "in vec2 vertexUV;\n"
+//    "out vec2 UV;\n"
+//    "out vec3 fnormal;\n"
+//    "out vec3 view_dir;\n"
+//    "out vec3 light_dir;\n"
 
-        "void main() {\n"
-        "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
-        "    gl_Position = P * vpoint_mv;\n"
-        "    UV = vertexUV;\n"
-        "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
-        "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
-        "    view_dir = -vpoint_mv.xyz;\n"
-        "}",
+//    "void main() {\n"
+//    "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
+//    "    gl_Position = P * vpoint_mv;\n"
+//    "    UV = vertexUV;\n"
+//    "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
+//    "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
+//    "    view_dir = -vpoint_mv.xyz;\n"
+//    "}",
 
-        /* Fragment shader */
-        "#version 330\n"
+//    /* Fragment shader */
+//    "#version 330\n"
 
-        "in vec2 UV;\n"
-        "in vec3 fnormal;\n"
-        "in vec3 view_dir;\n"
-        "in vec3 light_dir;\n"
+//    "in vec2 UV;\n"
+//    "in vec3 fnormal;\n"
+//    "in vec3 view_dir;\n"
+//    "in vec3 light_dir;\n"
 
-        "out vec4 color;\n"
+//    "out vec4 color;\n"
 
-        "// Values that stay constant for the whole mesh.\n"
+//    "// Values that stay constant for the whole mesh.\n"
 
-        "uniform sampler2D tex;\n"
+//    "uniform sampler2D tex;\n"
 
-        "void main() {\n"
-        "    vec4 color_uv = texture( tex, UV ).rgba;\n"
-        "    vec3 c = vec3(0.0);\n"
-        "    c += vec3(1.0)*vec3(0.18, 0.1, 0.1);\n"
-        "    vec3 n = normalize(fnormal);\n"
-        "    vec3 v = normalize(view_dir);\n"
-        "    vec3 l = normalize(light_dir);\n"
-        "    float lambert = dot(n,l);\n"
-        "    if(lambert > 0.0) {\n"
-        "        c += vec3(lambert);\n"
-        "        vec3 v = normalize(view_dir);\n"
-        "        vec3 r = reflect(-l,n);\n"
-        "        c += vec3(pow(max(dot(r,v), 0.0), 90.0));\n"
-        "    }\n"
-        "    color = vec4(c, 1.0);\n"
-        "    color *= color_uv;\n"
-        "}"
+//    "void main() {\n"
+//    "    vec4 color_uv = texture( tex, UV ).rgba;\n"
+//    "    vec3 c = vec3(0.0);\n"
+//    "    c += vec3(1.0)*vec3(0.18, 0.1, 0.1);\n"
+//    "    vec3 n = normalize(fnormal);\n"
+//    "    vec3 v = normalize(view_dir);\n"
+//    "    vec3 l = normalize(light_dir);\n"
+//    "    float lambert = dot(n,l);\n"
+//    "    if(lambert > 0.0) {\n"
+//    "        c += vec3(lambert);\n"
+//    "        vec3 v = normalize(view_dir);\n"
+//    "        vec3 r = reflect(-l,n);\n"
+//    "        c += vec3(pow(max(dot(r,v), 0.0), 90.0));\n"
+//    "    }\n"
+//    "    color = vec4(c, 1.0);\n"
+//    "    color *= color_uv;\n"
+//    "}"
 
-    );
+//);
 
-    m_hair_shader.init(
-        /* An identifying name */
-        "a_simple_shader_hair",
+//m_hair_shader.init(
+//    /* An identifying name */
+//    "a_simple_shader_hair",
 
-        /* Vertex shader */
-        "#version 330\n"
-        "uniform mat4 MV;\n"
-        "uniform mat4 P;\n"
+//    /* Vertex shader */
+//    "#version 330\n"
+//    "uniform mat4 MV;\n"
+//    "uniform mat4 P;\n"
 
-        "in vec3 position;\n"
-        "in vec3 normal;\n"
-        "in vec3 vec_colors;\n"
+//    "in vec3 position;\n"
+//    "in vec3 normal;\n"
+//    "in vec3 vec_colors;\n"
 
-        "out vec3 fcolor;\n"
-        "out vec3 fnormal;\n"
-        "out vec3 view_dir;\n"
-        "out vec3 light_dir;\n"
+//    "out vec3 fcolor;\n"
+//    "out vec3 fnormal;\n"
+//    "out vec3 view_dir;\n"
+//    "out vec3 light_dir;\n"
 
-        "void main() {\n"
-        "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
-        "    gl_Position = P * vpoint_mv;\n"
-        "    fcolor = vec_colors;\n"
-        "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
-        "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
-        "    view_dir = -vpoint_mv.xyz;\n"
-        "}",
+//    "void main() {\n"
+//    "    vec4 vpoint_mv = MV * vec4(position, 1.0);\n"
+//    "    gl_Position = P * vpoint_mv;\n"
+//    "    fcolor = vec_colors;\n"
+//    "    fnormal = mat3(transpose(inverse(MV))) * normal;\n"
+//    "    light_dir = vec3(0.0, 30.0, 0.0) - vpoint_mv.xyz;\n"
+//    "    view_dir = -vpoint_mv.xyz;\n"
+//    "}",
 
-        /* Fragment shader */
-        "#version 330\n"
+//    /* Fragment shader */
+//    "#version 330\n"
 
-        "in vec3 fcolor;\n"
-        "in vec3 fnormal;\n"
-        "in vec3 view_dir;\n"
-        "in vec3 light_dir;\n"
+//    "in vec3 fcolor;\n"
+//    "in vec3 fnormal;\n"
+//    "in vec3 view_dir;\n"
+//    "in vec3 light_dir;\n"
 
-        "out vec4 color;\n"
+//    "out vec4 color;\n"
 
-        "vec3 kajiyaKay(vec3 V, vec3 L, vec3 T) {                                  \n"
-        "float TdotL = dot(T, L);                                                  \n"
-        "float TdotV = dot(T, V);                                                  \n"
-        "vec3 specolor = vec3(1.0)*vec3(0.18, 0.1, 0.1);                           \n"
-        "// The diffuse component                                                  \n"
-        "float kajiyaDiff = sin(acos(TdotL));                                      \n"
-        "kajiyaDiff = pow(max(kajiyaDiff,0.0), 10);                                \n"
-        "                                                                          \n"
-        "// The specular component                                                 \n"
-        "float kajiyaSpec = cos(abs(acos(TdotL) - acos(-TdotV)));                  \n"
-        "kajiyaSpec = pow(max(0.0,kajiyaSpec), 100);                               \n"
-        "                                                                          \n"
-        "// The fragment color                                                     \n"
-        "vec3 outcolor = fcolor * 0.6 + fcolor * 0.5 * kajiyaDiff + specolor * kajiyaSpec;\n"
-        "return outcolor;                                                          \n"
-        "}                                                                         \n"
+//    "vec3 kajiyaKay(vec3 V, vec3 L, vec3 T) {                                  \n"
+//    "float TdotL = dot(T, L);                                                  \n"
+//    "float TdotV = dot(T, V);                                                  \n"
+//    "vec3 specolor = vec3(1.0)*vec3(0.18, 0.1, 0.1);                           \n"
+//    "// The diffuse component                                                  \n"
+//    "float kajiyaDiff = sin(acos(TdotL));                                      \n"
+//    "kajiyaDiff = pow(max(kajiyaDiff,0.0), 10);                                \n"
+//    "                                                                          \n"
+//    "// The specular component                                                 \n"
+//    "float kajiyaSpec = cos(abs(acos(TdotL) - acos(-TdotV)));                  \n"
+//    "kajiyaSpec = pow(max(0.0,kajiyaSpec), 100);                               \n"
+//    "                                                                          \n"
+//    "// The fragment color                                                     \n"
+//    "vec3 outcolor = fcolor * 0.6 + fcolor * 0.5 * kajiyaDiff + specolor * kajiyaSpec;\n"
+//    "return outcolor;                                                          \n"
+//    "}                                                                         \n"
 
 
-        "void main() {\n"
-        "    vec3 n = normalize(fnormal);\n"
-        "    vec3 v = normalize(view_dir);\n"
-        "    vec3 l = normalize(light_dir);\n"
-        "    vec3 kjk = kajiyaKay(v,l,n);\n"
-        "    color = vec4(kjk, 0.725);\n"
-        "}"
-    );
+//    "void main() {\n"
+//    "    vec3 n = normalize(fnormal);\n"
+//    "    vec3 v = normalize(view_dir);\n"
+//    "    vec3 l = normalize(light_dir);\n"
+//    "    vec3 kjk = kajiyaKay(v,l,n);\n"
+//    "    color = vec4(kjk, 0.725);\n"
+//    "}"
+//);
+
+//m_air_shader.init(
+
+//);  
+#pragma endregion
 }
 
 void Viewer::refresh_trackball_center() {
@@ -412,8 +426,10 @@ void Viewer::refresh_mesh() {
     m_hair_shader.bind();
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
     m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolor()));
-
     animate_hair();
+
+    m_air_shader.bind();
+    m_air_shader.uploadIndices(m_air->get_indices());
 }
 
 void Viewer::animate_hair()
@@ -423,6 +439,11 @@ void Viewer::animate_hair()
     m_mesh->get_hairpos(hair_pos, hair_normal);
     m_hair_shader.uploadAttrib("position", hair_pos);
     m_hair_shader.uploadAttrib("normal", hair_normal);
+}
+
+void Viewer::animate_air()
+{
+    m_air_shader.uploadAttrib("position", m_air->get_positions());
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
