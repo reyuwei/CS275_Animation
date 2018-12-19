@@ -64,57 +64,6 @@ Tri* Mesh::GetFacei(int i)
     return new Tri(a, b, c, normal);
 }
 
-bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
-{
-    Intersect* out;
-    //Ray ray(s, e - s);
-    //out = root->Hit(root, ray);
-    //if (out != NULL)
-    //    if (!isNull(out->hitpoint))
-    //    {
-    //        float hitsegmentlength = (out->hitpoint - s).norm();
-    //        //if (hitsegmentlength <= SPRING_REST_LENGTH)
-    //        //{
-    //        //    delete out;
-    //        //    return false;
-    //        //}
-    //        //else
-    //        {
-    //            outnormal = e - m_mesh_center;
-    //            outnormal.normalize();
-    //            delete out;
-    //            return true;
-    //        }
-    //    }
-    //delete out;
-    ////outnormal = (e - m_mesh_center).normalized();
-    //return false;
-
-    Ray ray(m_mesh_center, e - m_mesh_center);
-    out = root->Hit(root, ray);
-    if (out != NULL)
-        if (!isNull(out->hitpoint))
-        {
-            float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
-            float raylength = (e - m_mesh_center).norm();
-            if (hitsegmentlength < raylength)
-            {
-                delete out;
-                return false;
-            }
-            else
-            {
-                outnormal = out->hitpoint - e;
-                //outnormal.normalize();
-                //outnormal = outnormal * (e - out->hitpoint).norm();
-                delete out;
-                return true;
-            }
-        }
-    delete out;
-    return false;
-}
-
 void Mesh::transform_hair(Eigen::Matrix4f& model)
 {
     hair_part.transform(model);
@@ -390,6 +339,56 @@ GLTexture* Mesh::get_texture()
 }
 
 ///////////////////////////////////////////////////////////////////hair
+bool Mesh::rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
+{
+    Intersect* out;
+    //Ray ray(s, e - s);
+    //out = root->Hit(root, ray);
+    //if (out != NULL)
+    //    if (!isNull(out->hitpoint))
+    //    {
+    //        float hitsegmentlength = (out->hitpoint - s).norm();
+    //        //if (hitsegmentlength <= SPRING_REST_LENGTH)
+    //        //{
+    //        //    delete out;
+    //        //    return false;
+    //        //}
+    //        //else
+    //        {
+    //            outnormal = e - m_mesh_center;
+    //            outnormal.normalize();
+    //            delete out;
+    //            return true;
+    //        }
+    //    }
+    //delete out;
+    ////outnormal = (e - m_mesh_center).normalized();
+    //return false;
+
+    Ray ray(m_mesh_center, e - m_mesh_center);
+    out = root->Hit(root, ray);
+    if (out != NULL)
+        if (!isNull(out->hitpoint))
+        {
+            float hitsegmentlength = (out->hitpoint - m_mesh_center).norm();
+            float raylength = (e - m_mesh_center).norm();
+            if (hitsegmentlength < raylength)
+            {
+                delete out;
+                return false;
+            }
+            else
+            {
+                outnormal = out->hitpoint - e;
+                //outnormal.normalize();
+                //outnormal = outnormal * (e - out->hitpoint).norm();
+                delete out;
+                return true;
+            }
+        }
+    delete out;
+    return false;
+}
 
 void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
 {
@@ -402,17 +401,56 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
             Eigen::Vector3f outnormal;
             int s_id = i * (m_num_segment_hairs + 1) + j + 0;
             int e_id = i * (m_num_segment_hairs + 1) + j + 1;
-            if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+            //if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+            //{
+            //    hair_part.add_force(i, j, outnormal);
+            //}
+           /* Eigen::Vector3f v = hair_part.get_velocity_at(i, j);
+            if (this->hitair(v, m_hair.col(e_id), outnormal))
             {
                 hair_part.add_force(i, j, outnormal);
-            }
+            }*/
         }
     }
-
     m_hair = hair_part.get_positions(hair_normal, true);
+
+    //m_hair = hair_part.get_positions(hair_normal, false);
 
     hair_pos = m_hair;
 }
+
+bool Mesh::hitair(Eigen::Vector3f v, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
+{
+    // get velocity at e
+
+    Eigen::Vector3f offset = e - air_->start_pos;
+    Eigen::Vector3f velocity_x = air_->interpolatev(offset / air_->gridlength, X);
+    Eigen::Vector3f velocity_y = air_->interpolatev(offset / air_->gridlength, Y);
+    Eigen::Vector3f velocity_z = air_->interpolatev(offset / air_->gridlength, Z);
+
+    Eigen::Vector3f air_v = velocity_x + velocity_y + velocity_z;
+
+    if (air_v.x() == 0 && air_v.y() == 0 && air_v.z() == 0)
+        return false;
+
+    Eigen::Vector3f hair_v = v;
+    Eigen::Vector3f diff_v = hair_v - air_v;
+    air_->addforce_at(offset, diff_v);
+
+    //// hair v
+    //std::cout << "hhhh: " << v << std::endl;
+    //// air v
+    //std::cout << "aaaa: " << air_v << std::endl;
+
+    outnormal = air_v - hair_v;
+    return true;
+}
+
+void Mesh::set_air_field(Fluid *air)
+{
+    air_ = air;
+}
+
 
 const MatrixXu *Mesh::get_hairindices()
 {

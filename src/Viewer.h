@@ -48,6 +48,7 @@ public:
     void animate_air();
     void animate_hair();
     void refresh_mesh();
+    void blow_wind();
     void refresh_trackball_center();
 
     virtual bool keyboardEvent(int key, int scancode, int action, int modifiers);

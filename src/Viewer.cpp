@@ -60,6 +60,12 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
             text_iskeyframe->setVisible(false);
     });
 
+    Button *blowwind = new Button(controller_panel, "Blow");
+    blowwind->setCallback([this]() {
+        this->blow_wind();
+    });
+
+
     text_iskeyframe = new TextBox(controller_panel);
     text_iskeyframe->setFixedSize(Vector2i(300, 25));
     text_iskeyframe->setValue("KEYFRAME!");
@@ -183,6 +189,12 @@ void Viewer::drawContents() {
         //m_mesh->transform_hair(model);
     }
 
+    m_air_shader.bind();
+    m_air_shader.setUniform("MV", mv);
+    m_air_shader.setUniform("P", p);
+    m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
+    this->animate_air();
+
     m_hair_shader.bind();
     if (playing)
     {
@@ -198,11 +210,7 @@ void Viewer::drawContents() {
     m_hair_shader.drawIndexed(GL_LINES, 0, m_mesh->get_number_of_hair());
     this->animate_hair();
 
-    m_air_shader.bind();
-    m_air_shader.setUniform("MV", mv);
-    m_air_shader.setUniform("P", p);
-    m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
-    this->animate_air();
+
 
     float fTime = glfwGetTime();
     elapsed = fTime - lasttime;
@@ -426,10 +434,13 @@ void Viewer::refresh_mesh() {
     m_hair_shader.bind();
     m_hair_shader.uploadIndices(*(m_mesh->get_hairindices()));
     m_hair_shader.uploadAttrib("vec_colors", *(m_mesh->get_haircolor()));
+    m_mesh->set_air_field(m_air);
     animate_hair();
+
 
     m_air_shader.bind();
     m_air_shader.uploadIndices(m_air->get_indices());
+    animate_air();
 }
 
 void Viewer::animate_hair()
@@ -443,7 +454,13 @@ void Viewer::animate_hair()
 
 void Viewer::animate_air()
 {
+    m_air->Animate();
     m_air_shader.uploadAttrib("position", m_air->get_positions());
+}
+
+void Viewer::blow_wind()
+{
+    m_air->get_source_force();
 }
 
 void Viewer::computeCameraMatrices(Eigen::Matrix4f &model,
@@ -477,4 +494,5 @@ Viewer::~Viewer() {
     m_hair_shader.free();
     delete m_mesh;
     delete m_animator;
+    delete m_air;
 }

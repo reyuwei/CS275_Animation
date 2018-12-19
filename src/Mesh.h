@@ -12,8 +12,10 @@
 #include "tiny_obj_loader.h"
 #include "MassSpring.h"
 #include "KDTree.h"
+#include "Air.h"
+//#include "nanogui/common.h"
 
-typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
+//typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
 
 class Mesh {
 public:
@@ -38,9 +40,11 @@ public:
 
     Tri* GetFacei(int i);
     bool rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal);
+    bool hitair(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal);
 
     void transform_hair(Eigen::Matrix4f& model);
     void reset_hair();
+    void set_air_field(Fluid *air);
 private:
     std::vector<tinyobj::shape_t> m_shapes;
     std::vector<tinyobj::material_t> m_materials;
@@ -60,8 +64,8 @@ private:
     std::vector<float> ishair;
     Hair hair_part;
     int m_num_max_hairs;
-    int m_num_guide_hairs = 800;
-    int m_num_interpolate_hairs = 20;
+    int m_num_guide_hairs = 10;
+    int m_num_interpolate_hairs = 1;
     int m_num_segment_hairs = 5;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
@@ -69,7 +73,7 @@ private:
     MatrixXu m_hairindices;
 
     KDNode *root;
-
+    Fluid* air_;
 };
 
 

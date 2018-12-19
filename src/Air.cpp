@@ -10,9 +10,9 @@ Grid::Grid(Eigen::Vector3f pos, float length_)
     density = 0;
     prev_density = 0;
 
-    velocity.push_back(Eigen::Vector3f(1.0f, 0.0f, 0.0f));
-    velocity.push_back(Eigen::Vector3f(0.0f, 1.0f, 0.0f));
-    velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+    velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+    velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+    velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 
     prev_velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
     prev_velocity.push_back(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
@@ -45,20 +45,24 @@ void Grid::swapdensity()
 Eigen::Vector3f Grid::visvelocity()
 {
     Eigen::Vector3f dir_v = velocity[X] + velocity[Y] + velocity[Z];
+    if (dir_v.x() == 0 && dir_v.y() == 0 && dir_v.z() == 0)
+        dir_v << 0.01f, 0.01f, 0.01f;
+    //else
+    //    dir_v = dir_v.normalized();
     Eigen::Vector3f end_v = center + dir_v * size / 2.0f;
     return end_v;
 }
 
 Fluid::Fluid(Eigen::Vector3f center, float diameter)
 {
-    indices = MatrixXu(2, get_number_of_grid());
+    indices = ms::MatrixXu(2, get_number_of_grid());
     for (int i = 0; i < get_number_of_grid(); i++)
     {
         indices.col(i) << 2 * i, 2 * i + 1;
     }
     positions = Eigen::MatrixXf(3, get_number_of_grid() * 2);
     int counter = 0;
-
+    diameter *= 2.0f;
     gridlength = diameter * 1.0f / gridsidecount;
     float half_diameter = diameter / 2.0f;
     float half_gridlength = gridlength / 2.0f;
@@ -89,7 +93,25 @@ Fluid::Fluid(Eigen::Vector3f center, float diameter)
 void Fluid::Animate()
 {
     vstep();
+
     dstep();
+}
+
+void Fluid::get_source_force()
+{
+    // add velocity
+    for (int j = 0; j < gridsidecount; j++)
+        for (int k = 0; k < gridsidecount; k++)
+        {
+            grids[0][j][k].prev_velocity[X] = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
+            grids[0][j][k].prev_velocity[Y] = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
+            grids[0][j][k].prev_velocity[Z] = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
+        }
+    //grids[1][1][1].prev_density = 200.0f;
+
+    // add density at center;
+    //grids[gridsidecount / 2][gridsidecount / 2][gridsidecount / 2].prev_density = 200.0f;
+
 }
 
 void Fluid::vstep()
@@ -157,6 +179,34 @@ void Fluid::addforce(int nd, FIELD fd)
 
 }
 
+void Fluid::addforce_at(Eigen::Vector3f offset, Eigen::Vector3f f)
+{
+    int x0 = floor(offset.x());
+    int y0 = floor(offset.y());
+    int z0 = floor(offset.z());
+
+
+    float xd = abs(offset.x() - x0);
+    float yd = abs(offset.y() - y0);
+    float zd = abs(offset.z() - z0);
+
+    x0 = std::max(0, x0);
+    y0 = std::max(0, y0);
+    z0 = std::max(0, z0);
+    x0 = std::min(x0, gridsidecount - 1);
+    y0 = std::min(y0, gridsidecount - 1);
+    z0 = std::min(z0, gridsidecount - 1);
+
+    grids[x0][y0][z0].velocity[X] += f;
+    grids[x0][y0][z0].velocity[Y] += f;
+    grids[x0][y0][z0].velocity[Z] += f;
+
+
+    //int x1 = std::min(x0 + 1, gridsidecount - 1);
+    //int y1 = std::min(y0 + 1, gridsidecount - 1);
+    //int z1 = std::min(z0 + 1, gridsidecount - 1);
+}
+
 void Fluid::advection(int nd, FIELD fd)
 {
     if (fd == F_VELOCITY)
@@ -202,9 +252,87 @@ void Fluid::diffusion(int nd, FIELD fd)
     {
         scalar = k_diff;
     }
-    float a = scalar * TIME_STEP * gridlength * gridlength * gridlength;
+    float a = scalar * TIME_STEP * gridsidecount * gridsidecount * gridsidecount;
     float c = 1 + 6 * a;
     lin_solve_diffusion(nd, a, c, fd);
+}
+
+void Fluid::set_bnd_v(int nd, Eigen::Vector3f *x)
+{
+    //int M = gridsidecount - 2;
+    //int N = M;
+    //int O = M;
+    //int b = nd + 1;
+
+    //// bounds are cells at faces of the cube
+
+    //int i, j;
+
+    ////setting faces
+    //for (i = 1; i <= M; i++)
+    //{
+    //    for (j = 1; j <= N; j++)
+    //    {
+    //        x[IX(i, j, 0)] = b == 3 ? -x[IX(i, j, 1)] : x[IX(i, j, 1)];
+    //        x[IX(i, j, O + 1)] = b == 3 ? -x[IX(i, j, O)] : x[IX(i, j, O)];
+    //    }
+    //}
+
+    //for (i = 1; i <= N; i++)
+    //{
+    //    for (j = 1; j <= O; j++)
+    //    {
+    //        x[IX(0, i, j)] = b == 1 ? -x[IX(1, i, j)] : x[IX(1, i, j)];
+    //        x[IX(M + 1, i, j)] = b == 1 ? -x[IX(M, i, j)] : x[IX(M, i, j)];
+    //    }
+    //}
+
+    //for (i = 1; i <= M; i++)
+    //{
+    //    for (j = 1; j <= O; j++)
+    //    {
+    //        x[IX(i, 0, j)] = b == 2 ? -x[IX(i, 1, j)] : x[IX(i, 1, j)];
+    //        x[IX(i, N + 1, j)] = b == 2 ? -x[IX(i, N, j)] : x[IX(i, N, j)];
+    //    }
+    //}
+
+    ////Setting edges
+    //for (i = 1; i <= M; i++)
+    //{
+    //    x[IX(i, 0, 0)] = 1.0 / 2.0 * (x[IX(i, 1, 0)] + x[IX(i, 0, 1)]);
+    //    x[IX(i, N + 1, 0)] = 1.0 / 2.0 * (x[IX(i, N, 0)] + x[IX(i, N + 1, 1)]);
+    //    x[IX(i, 0, O + 1)] = 1.0 / 2.0 * (x[IX(i, 0, O)] + x[IX(i, 1, O + 1)]);
+    //    x[IX(i, N + 1, O + 1)] = 1.0 / 2.0 * (x[IX(i, N, O + 1)] + x[IX(i, N + 1, O)]);
+    //}
+
+    //for (i = 1; i <= N; i++)
+    //{
+    //    x[IX(0, i, 0)] = 1.0 / 2.0 * (x[IX(1, i, 0)] + x[IX(0, i, 1)]);
+    //    x[IX(M + 1, i, 0)] = 1.0 / 2.0 * (x[IX(M, i, 0)] + x[IX(M + 1, i, 1)]);
+    //    x[IX(0, i, O + 1)] = 1.0 / 2.0 * (x[IX(0, i, O)] + x[IX(1, i, O + 1)]);
+    //    x[IX(M + 1, i, O + 1)] = 1.0 / 2.0 * (x[IX(M, i, O + 1)] + x[IX(M + 1, i, O)]);
+    //}
+
+    //for (i = 1; i <= O; i++)
+    //{
+    //    x[IX(0, 0, i)] = 1.0 / 2.0 * (x[IX(0, 1, i)] + x[IX(1, 0, i)]);
+    //    x[IX(0, N + 1, i)] = 1.0 / 2.0 * (x[IX(0, N, i)] + x[IX(1, N + 1, i)]);
+    //    x[IX(M + 1, 0, i)] = 1.0 / 2.0 * (x[IX(M, 0, i)] + x[IX(M + 1, 1, i)]);
+    //    x[IX(M + 1, N + 1, i)] = 1.0 / 2.0 * (x[IX(M + 1, N, i)] + x[IX(M, N + 1, i)]);
+    //}
+
+    ////setting corners
+    //x[IX(0, 0, 0)] = 1.0 / 3.0 * (x[IX(1, 0, 0)] + x[IX(0, 1, 0)] + x[IX(0, 0, 1)]);
+    //x[IX(0, N + 1, 0)] = 1.0 / 3.0 * (x[IX(1, N + 1, 0)] + x[IX(0, N, 0)] + x[IX(0, N + 1, 1)]);
+
+    //x[IX(M + 1, 0, 0)] = 1.0 / 3.0 * (x[IX(M, 0, 0)] + x[IX(M + 1, 1, 0)] + x[IX(M + 1, 0, 1)]);
+    //x[IX(M + 1, N + 1, 0)] = 1.0 / 3.0 * (x[IX(M, N + 1, 0)] + x[IX(M + 1, N, 0)] + x[IX(M + 1, N + 1, 1)]);
+
+    //x[IX(0, 0, O + 1)] = 1.0 / 3.0 * (x[IX(1, 0, O + 1)] + x[IX(0, 1, O + 1)] + x[IX(0, 0, O)]);
+    //x[IX(0, N + 1, O + 1)] = 1.0 / 3.0 * (x[IX(1, N + 1, O + 1)] + x[IX(0, N, O + 1)] + x[IX(0, N + 1, O)]);
+
+    //x[IX(M + 1, 0, O + 1)] = 1.0 / 3.0 * (x[IX(M, 0, O + 1)] + x[IX(M + 1, 1, O + 1)] + x[IX(M + 1, 0, O)]);
+    //x[IX(M + 1, N + 1, O + 1)] = 1.0 / 3.0 * (x[IX(M, N + 1, O + 1)] + x[IX(M + 1, N, O + 1)] + x[IX(M + 1, N + 1, O)]);
 }
 
 void Fluid::setbound(FIELD fd)
@@ -221,6 +349,10 @@ void Fluid::setbound(FIELD fd)
                         grids[x][y][z].velocity[X] = Eigen::Vector3f(0, 0, 0);
                         grids[x][y][z].velocity[Y] = Eigen::Vector3f(0, 0, 0);
                         grids[x][y][z].velocity[Z] = Eigen::Vector3f(0, 0, 0);
+
+                        //grids[x][y][z].velocity[X] = -0.5f*grids[x][y][z].velocity[X];
+                        //grids[x][y][z].velocity[Y] = -0.5f*grids[x][y][z].velocity[Y];
+                        //grids[x][y][z].velocity[Z] = -0.5f*grids[x][y][z].velocity[Z];
                     }
     }
     else if (fd == F_DENSITY)
@@ -245,6 +377,7 @@ void Fluid::setbound(FIELD fd)
                     {
                         // set velocity to zero
                         grids[x][y][z].prev_velocity[X] = Eigen::Vector3f(0, 0, 0);
+                        //grids[x][y][z].prev_velocity[X] = -0.5f * grids[x][y][z].prev_velocity[X];
                     }
     }
     else if (fd == PREVY)
@@ -257,6 +390,7 @@ void Fluid::setbound(FIELD fd)
                     {
                         // set velocity to zero
                         grids[x][y][z].prev_velocity[Y] = Eigen::Vector3f(0, 0, 0);
+                        //grids[x][y][z].prev_velocity[Y] = -0.5f* grids[x][y][z].prev_velocity[Y];
                     }
     }
 }
@@ -310,12 +444,16 @@ Eigen::Vector3f Fluid::interpolatev(Eigen::Vector3f difference, int nd)
     int y0 = floor(difference.y());
     int z0 = floor(difference.z());
 
-    float xd = difference.x() - x0;
-    float yd = difference.y() - y0;
-    float zd = difference.z() - z0;
+    float xd = abs(difference.x() - x0);
+    float yd = abs(difference.y() - y0);
+    float zd = abs(difference.z() - z0);
 
-    Eigen::Vector3f v0(x0, y0, z0);
-    Eigen::Vector3f vd(xd, yd, zd);
+    x0 = std::max(0, x0);
+    y0 = std::max(0, y0);
+    z0 = std::max(0, z0);
+    x0 = std::min(x0, gridsidecount - 1);
+    y0 = std::min(y0, gridsidecount - 1);
+    z0 = std::min(z0, gridsidecount - 1);
 
     int x1 = std::min(x0 + 1, gridsidecount - 1);
     int y1 = std::min(y0 + 1, gridsidecount - 1);
@@ -340,12 +478,16 @@ float Fluid::interpolated(Eigen::Vector3f difference)
     int y0 = floor(difference.y());
     int z0 = floor(difference.z());
 
-    float xd = difference.x() - x0;
-    float yd = difference.y() - y0;
-    float zd = difference.z() - z0;
+    float xd = abs(difference.x() - x0);
+    float yd = abs(difference.y() - y0);
+    float zd = abs(difference.z() - z0);
 
-    Eigen::Vector3f v0(x0, y0, z0);
-    Eigen::Vector3f vd(xd, yd, zd);
+    x0 = std::max(0, x0);
+    y0 = std::max(0, y0);
+    z0 = std::max(0, z0);
+    x0 = std::min(x0, gridsidecount - 1);
+    y0 = std::min(y0, gridsidecount - 1);
+    z0 = std::min(z0, gridsidecount - 1);
 
     int x1 = std::min(x0 + 1, gridsidecount - 1);
     int y1 = std::min(y0 + 1, gridsidecount - 1);
@@ -432,7 +574,7 @@ int Fluid::get_number_of_grid()
     return gridsidecount * gridsidecount*gridsidecount;
 }
 
-MatrixXu Fluid::get_indices()
+ms::MatrixXu Fluid::get_indices()
 {
     return indices;
 }

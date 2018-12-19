@@ -5,10 +5,12 @@
 #include <nanogui/glutil.h>
 #include <omp.h>
 
-typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
-
+namespace ms {
+    typedef Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic> MatrixXu;
+}
+using namespace ms;
 const static float SPRING_REST_LENGTH = 20.0f;
-const static float GRAVITY = 5.0f;
+const static float GRAVITY = 0.0f;
 const static float MASS = 30.0f;
 static float TIME_STEP = 0.2f; // 20ms
 const static Eigen::Vector3f GRAVITY_DIRECTION = Eigen::Vector3f(0.0f, 0.0f, -1.0f);
@@ -33,23 +35,6 @@ static int combinator(int n, int m)
     }
     return factorial(n) / (factorial(m)*factorial(n - m));
 }
-
-
-
-//static Eigen::Vector3f BazierLinePoint(float t, std::vector<Eigen::Vector3f> control_points)
-//{
-//    Eigen::Vector3f sample_p(0, 0, 0);
-//    int order = control_points.size();
-//    for (int i = 0; i < order; i++)
-//    {
-//        sample_p += control_points[i] * pow((1 - t), order - 1 - i)*pow(t, i) * combinator(order - 1, i);
-//    }
-//    return sample_p;
-//}
-
-
-
-
 
 class Spring
 {
@@ -97,7 +82,10 @@ public:
     {
         return k_damping * velocity;
     }
-
+    Eigen::Vector3f getCurrVelocity()
+    {
+        return velocity;
+    }
     Eigen::Vector3f animate(Spring *before, Spring *after)
     {
         if (before != NULL)
@@ -197,6 +185,11 @@ public:
     {
         //std::cout << root.x() << " " << root.y() << " " << root.z() << std::endl;
         return ori_dir;
+    }
+
+    Eigen::Vector3f get_velocity_at(int segnemt_id)
+    {
+        return segments[segnemt_id].getCurrVelocity();
     }
 
     //Eigen::Vector3f get_segment_end(int i)
@@ -421,6 +414,11 @@ public:
             }
         }
         return hair_indices;
+    }
+
+    Eigen::Vector3f get_velocity_at(int strand_id, int segment_id)
+    {
+       return guide_strands[strand_id].get_velocity_at(segment_id);
     }
 
     int get_number_hair()
