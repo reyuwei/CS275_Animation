@@ -19,6 +19,7 @@ enum FIELD
 {
     F_DENSITY,
     F_VELOCITY,
+
     VX, VY, VZ, PREVX, PREVY, PREVZ
 };
 
@@ -60,16 +61,16 @@ public:
     Fluid(Eigen::Vector3f center, float diameter);
     void Animate();
     void swap(FIELD fd);
-    void addforce(int nd, FIELD fd);
+    void addforce(FIELD fd);
     void addforce_at(Eigen::Vector3f offset, Eigen::Vector3f f);
-    void advection(int nd, FIELD fd);
-    void diffusion(int nd, FIELD fd);
+    void advection(FIELD fd);
+    void diffusion(FIELD fd);
     void projection();
     void setbound(FIELD fd);
     void set_bnd_v(int nd, Eigen::Vector3f* x);
     Eigen::Vector3f interpolatev(Eigen::Vector3f center_pos, int nd);
     float interpolated(Eigen::Vector3f center_pos);
-    void lin_solve_diffusion(int nd, float a, float c, FIELD fd);
+    void lin_solve_diffusion(float a, float c, FIELD fd);
     void lin_solve_projection(float a, float c);
     void vstep();
     void dstep();

@@ -117,14 +117,12 @@ void Fluid::get_source_force()
 void Fluid::vstep()
 {
     // add force
-    for (int nd = 0; nd < NDIM; nd++)
-        addforce(nd, F_VELOCITY);
+    addforce(F_VELOCITY);
 
     swap(F_VELOCITY);
 
     // diffusion
-    for (int nd = 0; nd < NDIM; nd++)
-        diffusion(nd, F_VELOCITY);
+    diffusion(F_VELOCITY);
 
     // projection
     projection();
@@ -132,8 +130,7 @@ void Fluid::vstep()
     swap(F_VELOCITY);
 
     // advection
-    for (int nd = 0; nd < NDIM; nd++)
-        advection(nd, F_VELOCITY);
+    advection(F_VELOCITY);
 
     // projection
     projection();
@@ -142,11 +139,11 @@ void Fluid::vstep()
 
 void Fluid::dstep()
 {
-    addforce(0, F_DENSITY);
+    addforce(F_DENSITY);
     swap(F_DENSITY);
-    diffusion(0, F_DENSITY);
+    diffusion(F_DENSITY);
     swap(F_DENSITY);
-    advection(0, F_DENSITY);
+    advection(F_DENSITY);
 }
 
 void Fluid::swap(FIELD fd)
@@ -163,14 +160,18 @@ void Fluid::swap(FIELD fd)
                     grids[x][y][z].swapvelocity();
 }
 
-void Fluid::addforce(int nd, FIELD fd)
+void Fluid::addforce(FIELD fd)
 {
     //auto f = GRAVITY_DIRECTION * GRAVITY;
     if (fd == F_VELOCITY)
         for (int x = 0; x < gridsidecount; x++)
             for (int y = 0; y < gridsidecount; y++)
                 for (int z = 0; z < gridsidecount; z++)
-                    grids[x][y][z].velocity[nd] += TIME_STEP *grids[x][y][z].prev_velocity[nd];
+                {
+                    grids[x][y][z].velocity[X] += TIME_STEP *grids[x][y][z].prev_velocity[X];
+                    grids[x][y][z].velocity[Y] += TIME_STEP *grids[x][y][z].prev_velocity[Y];
+                    grids[x][y][z].velocity[Z] += TIME_STEP *grids[x][y][z].prev_velocity[Z];
+                }
     else if (fd == F_DENSITY)
         for (int x = 0; x < gridsidecount; x++)
             for (int y = 0; y < gridsidecount; y++)
@@ -207,7 +208,7 @@ void Fluid::addforce_at(Eigen::Vector3f offset, Eigen::Vector3f f)
     //int z1 = std::min(z0 + 1, gridsidecount - 1);
 }
 
-void Fluid::advection(int nd, FIELD fd)
+void Fluid::advection(FIELD fd)
 {
     if (fd == F_VELOCITY)
     {
@@ -220,7 +221,9 @@ void Fluid::advection(int nd, FIELD fd)
                     // find its grid
                     Eigen::Vector3f offset = center_pos - start_pos;
                     // interpolation
-                    grids[x][y][z].velocity[nd] = interpolatev(offset / gridlength, nd);
+                    grids[x][y][z].velocity[X] = interpolatev(offset / gridlength, X);
+                    grids[x][y][z].velocity[Y] = interpolatev(offset / gridlength, Y);
+                    grids[x][y][z].velocity[Z] = interpolatev(offset / gridlength, Z);
                 }
         setbound(fd);
     }
@@ -241,7 +244,7 @@ void Fluid::advection(int nd, FIELD fd)
     }
 }
 
-void Fluid::diffusion(int nd, FIELD fd)
+void Fluid::diffusion(FIELD fd)
 {
     float scalar = 0;
     if (fd == F_VELOCITY)
@@ -254,7 +257,7 @@ void Fluid::diffusion(int nd, FIELD fd)
     }
     float a = scalar * TIME_STEP * gridsidecount * gridsidecount * gridsidecount;
     float c = 1 + 6 * a;
-    lin_solve_diffusion(nd, a, c, fd);
+    lin_solve_diffusion(a, c, fd);
 }
 
 void Fluid::set_bnd_v(int nd, Eigen::Vector3f *x)
@@ -400,41 +403,42 @@ void Fluid::projection()
     // p - u0 = last_v_x
     // div - v0 = last_v_y
 
-    for (int x = 1; x < gridsidecount - 1; x++)
-    {
-        for (int y = 1; y < gridsidecount - 1; y++)
+
+    for (int nd = 0; nd < NDIM; nd++)
+        for (int x = 1; x < gridsidecount - 1; x++)
         {
-            for (int z = 1; z < gridsidecount - 1; z++)
+            for (int y = 1; y < gridsidecount - 1; y++)
             {
-                grids[x][y][z].prev_velocity[Y] = -1.0 / 3.0*(
-                    (grids[x + 1][y][z].velocity[X] - grids[x - 1][y][z].velocity[X]) / gridsidecount +
-                    (grids[x][y + 1][z].velocity[Y] - grids[x][y - 1][z].velocity[Y]) / gridsidecount +
-                    (grids[x][y][z + 1].velocity[Z] - grids[x][y][z - 1].velocity[Z]) / gridsidecount);
-                grids[x][y][z].prev_velocity[X] = Eigen::Vector3f(0, 0, 0);
+                for (int z = 1; z < gridsidecount - 1; z++)
+                {
+                    grids[x][y][z].prev_velocity[nd].y() = -1.0 / 3.0*(
+                        (grids[x + 1][y][z].velocity[nd][0] - grids[x - 1][y][z].velocity[nd][0]) / gridsidecount +
+                        (grids[x][y + 1][z].velocity[nd][1] - grids[x][y - 1][z].velocity[nd][1]) / gridsidecount +
+                        (grids[x][y][z + 1].velocity[nd][2] - grids[x][y][z - 1].velocity[nd][2]) / gridsidecount);
+                    grids[x][y][z].prev_velocity[nd].x() = 0;
+                }
             }
         }
-    }
 
     setbound(PREVX);
     setbound(PREVY);
 
     lin_solve_projection(1, 6);
+    for (int nd = 0; nd < NDIM; nd++)
 
-    for (int x = 1; x < gridsidecount - 1; x++)
-    {
-        for (int y = 1; y < gridsidecount - 1; y++)
+        for (int x = 1; x < gridsidecount - 1; x++)
         {
-            for (int z = 1; z < gridsidecount - 1; z++)
+            for (int y = 1; y < gridsidecount - 1; y++)
             {
-                grids[x][y][z].velocity[X] -= 0.5f * gridlength * (grids[x + 1][y][z].prev_velocity[X] - grids[x - 1][y][z].prev_velocity[X]);
-                grids[x][y][z].velocity[Y] -= 0.5f * gridlength * (grids[x][y + 1][z].prev_velocity[X] - grids[x][y - 1][z].prev_velocity[X]);
-                grids[x][y][z].velocity[Z] -= 0.5f * gridlength * (grids[x][y][z + 1].prev_velocity[X] - grids[x][y][z - 1].prev_velocity[X]);
+                for (int z = 1; z < gridsidecount - 1; z++)
+                {
+                    grids[x][y][z].velocity[nd][0] -= 0.5f * gridlength * (grids[x + 1][y][z].prev_velocity[nd][0] - grids[x - 1][y][z].prev_velocity[nd][0]);
+                    grids[x][y][z].velocity[nd][1] -= 0.5f * gridlength * (grids[x][y + 1][z].prev_velocity[nd][0] - grids[x][y - 1][z].prev_velocity[nd][0]);
+                    grids[x][y][z].velocity[nd][2] -= 0.5f * gridlength * (grids[x][y][z + 1].prev_velocity[nd][0] - grids[x][y][z - 1].prev_velocity[nd][0]);
+                }
             }
         }
-    }
-
     setbound(F_VELOCITY);
-
 }
 
 Eigen::Vector3f Fluid::interpolatev(Eigen::Vector3f difference, int nd)
@@ -505,23 +509,24 @@ float Fluid::interpolated(Eigen::Vector3f difference)
     return c;
 }
 
-void Fluid::lin_solve_diffusion(int nd, float a, float c, FIELD fd)
+void Fluid::lin_solve_diffusion(float a, float c, FIELD fd)
 {
     if (fd == F_VELOCITY)
     {
         for (int l = 0; l < LINEARITER; l++)
-            for (int x = 1; x < gridsidecount - 1; x++)
-                for (int y = 1; y < gridsidecount - 1; y++)
-                    for (int z = 1; z < gridsidecount - 1; z++)
-                        // iterate the solver
-                        // update for each cell
-                        grids[x][y][z].velocity[nd] = (grids[x][y][z].prev_velocity[nd] +
-                            a*(grids[x - 1][y][z].velocity[nd] +
-                                grids[x + 1][y][z].velocity[nd] +
-                                grids[x][y - 1][z].velocity[nd] +
-                                grids[x][y + 1][z].velocity[nd] +
-                                grids[x][y][z - 1].velocity[nd] +
-                                grids[x][y][z + 1].velocity[nd])) / c;
+            for (int nd = 0; nd < NDIM; nd++)
+                for (int x = 1; x < gridsidecount - 1; x++)
+                    for (int y = 1; y < gridsidecount - 1; y++)
+                        for (int z = 1; z < gridsidecount - 1; z++)
+                            // iterate the solver
+                            // update for each cell
+                            grids[x][y][z].velocity[nd] = (grids[x][y][z].prev_velocity[nd] +
+                                a*(grids[x - 1][y][z].velocity[nd] +
+                                    grids[x + 1][y][z].velocity[nd] +
+                                    grids[x][y - 1][z].velocity[nd] +
+                                    grids[x][y + 1][z].velocity[nd] +
+                                    grids[x][y][z - 1].velocity[nd] +
+                                    grids[x][y][z + 1].velocity[nd])) / c;
         setbound(fd);
     }
     else if (fd == F_DENSITY)

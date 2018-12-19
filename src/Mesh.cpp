@@ -405,11 +405,11 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
             //{
             //    hair_part.add_force(i, j, outnormal);
             //}
-           /* Eigen::Vector3f v = hair_part.get_velocity_at(i, j);
+            Eigen::Vector3f v = hair_part.get_velocity_at(i, j);
             if (this->hitair(v, m_hair.col(e_id), outnormal))
             {
                 hair_part.add_force(i, j, outnormal);
-            }*/
+            }
         }
     }
     m_hair = hair_part.get_positions(hair_normal, true);
