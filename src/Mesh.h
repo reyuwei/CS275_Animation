@@ -41,7 +41,7 @@ public:
     Tri* GetFacei(int i);
     bool rayhit(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal);
     bool hitair(Eigen::Vector3f s, Eigen::Vector3f e, Eigen::Vector3f &outnormal);
-
+    void couple_air();
     void transform_hair(Eigen::Matrix4f& model);
     void reset_hair();
     void set_air_field(Fluid *air);
@@ -64,9 +64,9 @@ private:
     std::vector<float> ishair;
     Hair hair_part;
     int m_num_max_hairs;
-    int m_num_guide_hairs = 10;
-    int m_num_interpolate_hairs = 1;
-    int m_num_segment_hairs = 5;
+    int m_num_guide_hairs = 200;
+    int m_num_interpolate_hairs = 10;
+    int m_num_segment_hairs = 8;
     Eigen::MatrixXf m_hair;
     Eigen::MatrixXf m_hair_c;
     Eigen::MatrixXf m_hair_n;

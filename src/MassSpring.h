@@ -10,9 +10,9 @@ namespace ms {
 }
 using namespace ms;
 const static float SPRING_REST_LENGTH = 20.0f;
-const static float GRAVITY = 0.0f;
+const static float GRAVITY = 5.0f;
 const static float MASS = 30.0f;
-static float TIME_STEP = 0.2f; // 20ms
+static float TIME_STEP = 0.35f; // 20ms
 const static Eigen::Vector3f GRAVITY_DIRECTION = Eigen::Vector3f(0.0f, 0.0f, -1.0f);
 
 
@@ -126,7 +126,7 @@ public:
 
     void setExtraDir(Eigen::Vector3f extra_force_dir)
     {
-        extra_dir = extra_force_dir;
+        extra_dir += extra_force_dir;
     }
 };
 
@@ -418,7 +418,7 @@ public:
 
     Eigen::Vector3f get_velocity_at(int strand_id, int segment_id)
     {
-       return guide_strands[strand_id].get_velocity_at(segment_id);
+        return guide_strands[strand_id].get_velocity_at(segment_id);
     }
 
     int get_number_hair()

@@ -401,10 +401,10 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
             Eigen::Vector3f outnormal;
             int s_id = i * (m_num_segment_hairs + 1) + j + 0;
             int e_id = i * (m_num_segment_hairs + 1) + j + 1;
-            //if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
-            //{
-            //    hair_part.add_force(i, j, outnormal);
-            //}
+            if (this->rayhit(m_hair.col(s_id), m_hair.col(e_id), outnormal))
+            {
+                hair_part.add_force(i, j, outnormal);
+            }
             Eigen::Vector3f v = hair_part.get_velocity_at(i, j);
             if (this->hitair(v, m_hair.col(e_id), outnormal))
             {
@@ -412,6 +412,9 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
             }
         }
     }
+
+    this->couple_air();
+
     m_hair = hair_part.get_positions(hair_normal, true);
 
     //m_hair = hair_part.get_positions(hair_normal, false);
@@ -419,30 +422,46 @@ void Mesh::get_hairpos(Eigen::MatrixXf &hair_pos, Eigen::MatrixXf &hair_normal)
     hair_pos = m_hair;
 }
 
+void Mesh::couple_air()
+{
+    std::vector<Eigen::Vector3f> position;
+    std::vector<Eigen::Vector3f> velocity;
+
+    for (int i = 0; i < m_num_guide_hairs; i++)
+    {
+        for (int j = 0; j < m_num_segment_hairs; j++)
+        {
+            Eigen::Vector3f v = hair_part.get_velocity_at(i, j);
+            position.push_back(v);
+            velocity.push_back(hair_part.get_velocity_at(i, j));
+        }
+    }
+    if (position.size() > 0)
+        air_->update_velocity_field(position, velocity);
+}
+
 bool Mesh::hitair(Eigen::Vector3f v, Eigen::Vector3f e, Eigen::Vector3f &outnormal)
 {
     // get velocity at e
 
     Eigen::Vector3f offset = e - air_->start_pos;
-    Eigen::Vector3f velocity_x = air_->interpolatev(offset / air_->gridlength, X);
-    Eigen::Vector3f velocity_y = air_->interpolatev(offset / air_->gridlength, Y);
-    Eigen::Vector3f velocity_z = air_->interpolatev(offset / air_->gridlength, Z);
+    float velocity_x = air_->interpolatev(offset / air_->gridlength, X);
+    float velocity_y = air_->interpolatev(offset / air_->gridlength, Y);
+    float velocity_z = air_->interpolatev(offset / air_->gridlength, Z);
+    Eigen::Vector3f air_v(velocity_x, velocity_y, velocity_z);
+    //// hair v
+    //std::cout << "hhhh: " << v[0] << " " << v[1] << " " << v[2] << std::endl;
+    //// air v
+    //std::cout << "aaaa: " << air_v[0] << " " << air_v[1] << " " << air_v[2] << std::endl;
 
-    Eigen::Vector3f air_v = velocity_x + velocity_y + velocity_z;
 
-    if (air_v.x() == 0 && air_v.y() == 0 && air_v.z() == 0)
+    if (air_v.norm() < 1e-4)
         return false;
 
-    Eigen::Vector3f hair_v = v;
-    Eigen::Vector3f diff_v = hair_v - air_v;
-    air_->addforce_at(offset, diff_v);
+    //Eigen::Vector3f diff_v = v - air_v;
+    //air_->addforce_at(offset, v);
 
-    //// hair v
-    //std::cout << "hhhh: " << v << std::endl;
-    //// air v
-    //std::cout << "aaaa: " << air_v << std::endl;
-
-    outnormal = air_v - hair_v;
+    outnormal = air_v;
     return true;
 }
 

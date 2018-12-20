@@ -92,6 +92,9 @@ private:
     Fluid* m_air;
 
     bool playing = false;
+    bool showair_ = true;
+
+    CheckBox *showair;
 
     int currframe = 0;
     TextBox *text_frameid;

@@ -10,6 +10,9 @@
 
 #define NDIM 3
 const static int LINEARITER = 10;
+
+static float fluid_step = TIME_STEP;
+
 enum V_AXIS
 {
     X = 0, Y = 1, Z = 2,
@@ -32,8 +35,8 @@ public:
     float density;
     float prev_density;
 
-    std::vector<Eigen::Vector3f> velocity;
-    std::vector<Eigen::Vector3f> prev_velocity;
+    std::vector<float> velocity;
+    std::vector<float> prev_velocity;
 
 public:
     Grid(Eigen::Vector3f pos, float length_);
@@ -46,9 +49,9 @@ public:
 class Fluid
 {
 public:
-    float fluid_step = TIME_STEP;
-    float k_visc = 0.2f;
-    float k_diff = 0.5f;
+
+    float k_visc = 2.0f;
+    float k_diff = 0.0f;
     float gridlength = 1;
     int gridsidecount = 6;
     Eigen::Vector3f start_pos = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
@@ -66,9 +69,9 @@ public:
     void advection(FIELD fd);
     void diffusion(FIELD fd);
     void projection();
-    void setbound(FIELD fd);
+    void setbound(FIELD fd, int nd = 0);
     void set_bnd_v(int nd, Eigen::Vector3f* x);
-    Eigen::Vector3f interpolatev(Eigen::Vector3f center_pos, int nd);
+    float interpolatev(Eigen::Vector3f center_pos, int nd);
     float interpolated(Eigen::Vector3f center_pos);
     void lin_solve_diffusion(float a, float c, FIELD fd);
     void lin_solve_projection(float a, float c);
@@ -78,4 +81,6 @@ public:
     int get_number_of_grid();
     ms::MatrixXu get_indices();
     Eigen::MatrixXf get_positions();
+
+    void update_velocity_field(std::vector<Eigen::Vector3f> p, std::vector<Eigen::Vector3f> v);
 };

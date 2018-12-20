@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <Windows.h>
 
-static int framerate = 30;
+static int framerate = 60;
 
 Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
 
@@ -65,7 +65,6 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
         this->blow_wind();
     });
 
-
     text_iskeyframe = new TextBox(controller_panel);
     text_iskeyframe->setFixedSize(Vector2i(300, 25));
     text_iskeyframe->setValue("KEYFRAME!");
@@ -98,6 +97,8 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
     FPS->setFixedSize(Vector2i(300, 25));
     FPS->setValue("FPS: " + std::to_string(1.0f / elapsed));
 
+    showair = new CheckBox(slider_panel, "Show Velocity Field");
+    showair->setChecked(true);
 
     performLayout();
     initShaders();
@@ -176,7 +177,7 @@ void Viewer::drawContents() {
     glBindTexture(GL_TEXTURE_2D, m_mesh->get_texture()->texture());
     m_head_shader.setUniform("tex", 0);
 
-    // Setup OpenGL (making sure the GUI doesn't disable these
+    //// Setup OpenGL (making sure the GUI doesn't disable these
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     m_head_shader.drawIndexed(GL_TRIANGLES, 0, m_mesh->get_number_of_face());
@@ -186,13 +187,16 @@ void Viewer::drawContents() {
     {
         init_hair_trans = false;
         init_model = model;
-        //m_mesh->transform_hair(model);
+        m_mesh->transform_hair(model);
     }
 
-    m_air_shader.bind();
-    m_air_shader.setUniform("MV", mv);
-    m_air_shader.setUniform("P", p);
-    m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
+    if (showair->checked())
+    {
+        m_air_shader.bind();
+        m_air_shader.setUniform("MV", mv);
+        m_air_shader.setUniform("P", p);
+        m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
+    }
     this->animate_air();
 
     m_hair_shader.bind();
@@ -220,7 +224,8 @@ void Viewer::drawContents() {
     }
     char fps[20];
     elapsed = glfwGetTime() - lasttime;
-    TIME_STEP = elapsed * 300 / 1000.0f;
+    //TIME_STEP = elapsed * 500.0f / 1000.0f;
+    TIME_STEP = elapsed;
     sprintf(fps, "%7.2f", 1.0f / elapsed);
     std::string fps_str = fps;
     FPS->setValue("FPS: " + fps_str);
