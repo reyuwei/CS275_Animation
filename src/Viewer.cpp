@@ -98,7 +98,7 @@ Viewer::Viewer() : nanogui::Screen(Eigen::Vector2i(1024, 900), "KeyFrame") {
     FPS->setValue("FPS: " + std::to_string(1.0f / elapsed));
 
     showair = new CheckBox(slider_panel, "Show Velocity Field");
-    showair->setChecked(true);
+    showair->setChecked(false);
 
     performLayout();
     initShaders();
@@ -190,11 +190,11 @@ void Viewer::drawContents() {
         m_mesh->transform_hair(model);
     }
 
+    m_air_shader.bind();
+    m_air_shader.setUniform("MV", mv);
+    m_air_shader.setUniform("P", p);
     if (showair->checked())
     {
-        m_air_shader.bind();
-        m_air_shader.setUniform("MV", mv);
-        m_air_shader.setUniform("P", p);
         m_air_shader.drawIndexed(GL_LINES, 0, m_air->get_number_of_grid());
     }
     this->animate_air();

@@ -53,6 +53,7 @@ add_executable(tinyobjviewer
     src/KDTree.h
     src/Viewer.h
     src/Mesh.h
+    src/Air.h
     )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
